@@ -31,7 +31,7 @@ updateUserStatistics($user['id']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Desafíos Fitness</title>
+    <title>Dashboard - Fitness Challenge</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -39,31 +39,38 @@ updateUserStatistics($user['id']);
 <body>
     <!-- Header -->
     <header class="header">
-        <nav class="navbar container">
-            <a href="dashboard.php" class="logo">💪 Fitness Challenge</a>
-            <ul class="nav-links">
-                <li><a href="dashboard.php" class="active"><i class="fas fa-home"></i> Dashboard</a></li>
-                <li><a href="challenges.php"><i class="fas fa-trophy"></i> Desafíos</a></li>
-                <li><a href="progress.php"><i class="fas fa-chart-line"></i> Progreso</a></li>
-                <li><a href="statistics.php"><i class="fas fa-chart-bar"></i> Estadísticas</a></li>
-                <li>
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <span style="color: #6b7280;">Hola, <?php echo htmlspecialchars($user['username']); ?></span>
-                        <a href="../logout.php" class="btn btn-secondary" style="padding: 0.5rem 1rem;">
-                            <i class="fas fa-sign-out-alt"></i> Salir
-                        </a>
+        <nav class="navbar container-fluid">
+            <a href="dashboard.php" class="logo">
+                <i class="fas fa-dumbbell"></i>
+                <span>Fitness</span>
+            </a>
+            
+            <div class="nav-center">
+                <a href="dashboard.php" class="active">Dashboard</a>
+                <a href="challenges.php">Desafíos</a>
+                <a href="progress.php">Progreso</a>
+                <a href="statistics.php">Estadísticas</a>
+            </div>
+            
+            <div class="nav-right">
+                <div class="nav-user-menu">
+                    <i class="fas fa-bars" style="color: var(--gray-dark);"></i>
+                    <div class="user-avatar">
+                        <?php echo strtoupper(substr($user['username'], 0, 1)); ?>
                     </div>
-                </li>
-            </ul>
+                </div>
+            </div>
         </nav>
     </header>
 
     <!-- Contenido principal -->
-    <main class="container" style="margin-top: 2rem;">
-        <!-- Mensaje de bienvenida -->
-        <div class="fade-in">
-            <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">¡Bienvenido de vuelta, <?php echo htmlspecialchars($user['username']); ?>! 👋</h1>
-            <p style="color: #6b7280; font-size: 1.125rem;">
+    <main class="container" style="margin-top: 40px; margin-bottom: 40px;">
+        <!-- Saludo personalizado -->
+        <div class="fade-in" style="margin-bottom: 32px;">
+            <h1 style="font-size: 32px; font-weight: 800; color: var(--dark-color); margin-bottom: 8px;">
+                Hola, <?php echo htmlspecialchars($user['username']); ?> 👋
+            </h1>
+            <p style="color: var(--gray-medium); font-size: 16px;">
                 <?php
                 $hora = date('H');
                 if ($hora < 12) {
@@ -78,146 +85,190 @@ updateUserStatistics($user['id']);
         </div>
 
         <!-- Estadísticas principales -->
-        <div class="dashboard-grid" style="margin-top: 2rem;">
-            <div class="stat-card">
-                <i class="fas fa-trophy" style="font-size: 2.5rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
-                <div class="stat-number"><?php echo $stats['total_challenges']; ?></div>
-                <div class="stat-label">Desafíos Totales</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-bottom: 48px;">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <div class="stats-number"><?php echo $stats['total_challenges']; ?></div>
+                <div class="stats-label">Desafíos Totales</div>
             </div>
             
-            <div class="stat-card">
-                <i class="fas fa-check-circle" style="font-size: 2.5rem; color: var(--success-color); margin-bottom: 1rem;"></i>
-                <div class="stat-number"><?php echo $stats['completed_challenges']; ?></div>
-                <div class="stat-label">Desafíos Completados</div>
+            <div class="stats-card">
+                <div class="stats-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--secondary-color);">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stats-number"><?php echo $stats['completed_challenges']; ?></div>
+                <div class="stats-label">Desafíos Completados</div>
             </div>
             
-            <div class="stat-card">
-                <i class="fas fa-fire" style="font-size: 2.5rem; color: var(--danger-color); margin-bottom: 1rem;"></i>
-                <div class="stat-number"><?php echo number_format($stats['total_calories_burned']); ?></div>
-                <div class="stat-label">Calorías Quemadas</div>
+            <div class="stats-card">
+                <div class="stats-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+                    <i class="fas fa-fire"></i>
+                </div>
+                <div class="stats-number"><?php echo number_format($stats['total_calories_burned']); ?></div>
+                <div class="stats-label">Calorías Quemadas</div>
             </div>
             
-            <div class="stat-card">
-                <i class="fas fa-clock" style="font-size: 2.5rem; color: var(--warning-color); margin-bottom: 1rem;"></i>
-                <div class="stat-number"><?php echo round($stats['total_workout_time'] / 60); ?>h</div>
-                <div class="stat-label">Tiempo Total de Ejercicio</div>
+            <div class="stats-card">
+                <div class="stats-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stats-number"><?php echo round($stats['total_workout_time'] / 60); ?>h</div>
+                <div class="stats-label">Tiempo de Ejercicio</div>
             </div>
         </div>
 
-        <!-- Desafíos activos y actividades recientes -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
-            <!-- Desafíos activos -->
-            <div class="card">
-                <h2 style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between;">
-                    <span><i class="fas fa-running"></i> Desafíos Activos</span>
-                    <a href="challenges.php" class="btn btn-primary" style="font-size: 0.875rem; padding: 0.5rem 1rem;">
-                        <i class="fas fa-plus"></i> Nuevo
+        <!-- Sección de desafíos activos -->
+        <div style="margin-bottom: 48px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="font-size: 24px; font-weight: 700; color: var(--dark-color);">Desafíos Activos</h2>
+                <a href="challenges.php" class="btn btn-secondary">
+                    Ver todos
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            
+            <?php if (empty($activeChallenges)): ?>
+                <div class="empty-state" style="background: var(--white); border-radius: var(--border-radius); padding: 48px;">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-trophy" style="font-size: 48px;"></i>
+                    </div>
+                    <h3 class="empty-state-title">No tienes desafíos activos</h3>
+                    <p class="empty-state-text">Explora nuestra colección de desafíos y comienza tu transformación</p>
+                    <a href="challenges.php" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Explorar desafíos
                     </a>
-                </h2>
-                
-                <?php if (empty($activeChallenges)): ?>
-                    <p style="text-align: center; color: #6b7280; padding: 2rem 0;">
-                        <i class="fas fa-info-circle"></i> No tienes desafíos activos. 
-                        <a href="challenges.php" style="color: var(--primary-color);">¡Comienza uno ahora!</a>
-                    </p>
-                <?php else: ?>
+                </div>
+            <?php else: ?>
+                <div class="cards-grid">
                     <?php foreach ($activeChallenges as $challenge): 
                         $progress = calculateChallengeProgress($challenge['id']);
+                        $daysLeft = max(0, $challenge['duration'] - floor((time() - strtotime($challenge['start_date'])) / 86400));
                     ?>
-                        <div class="challenge-card" style="margin-bottom: 1rem;">
-                            <div class="challenge-header">
-                                <h3 class="challenge-title"><?php echo htmlspecialchars($challenge['name']); ?></h3>
-                                <span class="challenge-duration">
-                                    <i class="fas fa-calendar"></i> <?php echo $challenge['duration']; ?> días
-                                </span>
+                        <div class="card">
+                            <div style="padding: 24px;">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+                                    <h3 class="card-title"><?php echo htmlspecialchars($challenge['name']); ?></h3>
+                                    <span class="chip">
+                                        <i class="fas fa-clock"></i>
+                                        <?php echo $daysLeft; ?> días
+                                    </span>
+                                </div>
+                                
+                                <p class="card-subtitle" style="margin-bottom: 16px;">
+                                    <?php echo htmlspecialchars(substr($challenge['description'], 0, 100)) . '...'; ?>
+                                </p>
+                                
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: <?php echo $progress; ?>%;"></div>
+                                </div>
+                                
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                                    <span style="font-size: 14px; color: var(--gray-medium);">
+                                        <?php echo $progress; ?>% completado
+                                    </span>
+                                    <a href="progress.php?challenge=<?php echo $challenge['id']; ?>" class="btn btn-primary" style="padding: 8px 16px; font-size: 14px;">
+                                        <i class="fas fa-plus"></i>
+                                        Registrar actividad
+                                    </a>
+                                </div>
                             </div>
-                            <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 1rem;">
-                                Iniciado el <?php echo formatDate($challenge['start_date']); ?>
-                            </p>
-                            <div class="progress-bar">
-                                <div class="progress-fill" data-progress="<?php echo $progress; ?>" style="width: 0%;"></div>
-                            </div>
-                            <p style="text-align: right; color: #6b7280; font-size: 0.875rem; margin-top: 0.5rem;">
-                                <?php echo $progress; ?>% completado
-                            </p>
-                            <a href="progress.php?challenge=<?php echo $challenge['id']; ?>" class="btn btn-secondary btn-block" style="margin-top: 1rem;">
-                                <i class="fas fa-plus-circle"></i> Registrar actividad
-                            </a>
                         </div>
                     <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
+                </div>
+            <?php endif; ?>
+        </div>
 
+        <!-- Actividades recientes y gráfico -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
             <!-- Actividades recientes -->
-            <div class="card">
-                <h2 style="margin-bottom: 1.5rem;">
-                    <i class="fas fa-history"></i> Actividades Recientes
-                </h2>
+            <div style="background: var(--white); border-radius: var(--border-radius); padding: 24px;">
+                <h3 style="font-size: 18px; font-weight: 700; color: var(--dark-color); margin-bottom: 24px;">
+                    Actividades Recientes
+                </h3>
                 
                 <?php if (empty($recentActivities)): ?>
-                    <p style="text-align: center; color: #6b7280; padding: 2rem 0;">
-                        <i class="fas fa-info-circle"></i> No hay actividades registradas aún.
-                    </p>
+                    <div class="empty-state">
+                        <p class="empty-state-text">No hay actividades registradas aún</p>
+                    </div>
                 <?php else: ?>
-                    <div class="activity-list">
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
                         <?php foreach ($recentActivities as $activity): ?>
-                            <div class="activity-item">
-                                <div class="activity-info">
-                                    <div>
-                                        <div class="activity-type">
-                                            <i class="fas fa-dumbbell"></i> <?php echo htmlspecialchars($activity['activity_type']); ?>
-                                        </div>
-                                        <div style="font-size: 0.875rem; color: #6b7280;">
-                                            <?php echo htmlspecialchars($activity['challenge_name']); ?>
-                                        </div>
-                                    </div>
-                                    <div class="activity-stats">
-                                        <span><i class="fas fa-clock"></i> <?php echo $activity['duration']; ?> min</span>
-                                        <span><i class="fas fa-fire"></i> <?php echo $activity['calories_burned']; ?> cal</span>
-                                        <span><i class="fas fa-calendar"></i> <?php echo formatDate($activity['activity_date']); ?></span>
-                                    </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+                                <div>
+                                    <h4 style="font-size: 16px; font-weight: 600; color: var(--dark-color); margin-bottom: 4px;">
+                                        <?php echo htmlspecialchars($activity['activity_type']); ?>
+                                    </h4>
+                                    <p style="font-size: 14px; color: var(--gray-medium);">
+                                        <?php echo htmlspecialchars($activity['challenge_name']); ?>
+                                    </p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <p style="font-size: 14px; font-weight: 600; color: var(--dark-color);">
+                                        <i class="fas fa-fire" style="color: #ef4444;"></i>
+                                        <?php echo $activity['calories_burned']; ?> cal
+                                    </p>
+                                    <p style="font-size: 12px; color: var(--gray-medium);">
+                                        <?php echo formatDate($activity['activity_date']); ?>
+                                    </p>
                                 </div>
                             </div>
                         <?php endforeach; ?>
                     </div>
                     
-                    <a href="progress.php" class="btn btn-secondary btn-block" style="margin-top: 1rem;">
+                    <a href="progress.php" class="btn btn-ghost btn-block" style="margin-top: 16px;">
                         Ver todas las actividades
                     </a>
                 <?php endif; ?>
             </div>
-        </div>
 
-        <!-- Gráfico de progreso semanal -->
-        <div class="card" style="margin-top: 2rem;">
-            <h2 style="margin-bottom: 1.5rem;">
-                <i class="fas fa-chart-line"></i> Progreso Semanal
-            </h2>
-            <div style="height: 300px;">
-                <canvas id="caloriesChart"></canvas>
+            <!-- Gráfico de progreso -->
+            <div style="background: var(--white); border-radius: var(--border-radius); padding: 24px;">
+                <h3 style="font-size: 18px; font-weight: 700; color: var(--dark-color); margin-bottom: 24px;">
+                    Progreso Semanal
+                </h3>
+                <div style="height: 300px;">
+                    <canvas id="weeklyChart"></canvas>
+                </div>
             </div>
-        </div>
-
-        <!-- Acciones rápidas -->
-        <div class="dashboard-grid" style="margin-top: 2rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-            <a href="challenges.php" class="btn btn-primary" style="text-align: center; padding: 1.5rem;">
-                <i class="fas fa-plus-circle" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
-                Nuevo Desafío
-            </a>
-            <a href="progress.php" class="btn btn-success" style="text-align: center; padding: 1.5rem;">
-                <i class="fas fa-dumbbell" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
-                Registrar Actividad
-            </a>
-            <a href="statistics.php" class="btn btn-secondary" style="text-align: center; padding: 1.5rem;">
-                <i class="fas fa-chart-bar" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
-                Ver Estadísticas
-            </a>
         </div>
     </main>
 
+    <!-- Menú desplegable del usuario -->
+    <div id="userDropdown" style="display: none; position: absolute; top: 70px; right: 80px; background: var(--white); border-radius: var(--border-radius); box-shadow: var(--shadow-lg); padding: 8px 0; min-width: 200px; z-index: 1000;">
+        <a href="profile.php" style="display: block; padding: 12px 16px; color: var(--dark-color); text-decoration: none; font-size: 14px; transition: var(--transition);">
+            <i class="fas fa-user-circle" style="margin-right: 12px; width: 16px;"></i>
+            Mi Perfil
+        </a>
+        <a href="settings.php" style="display: block; padding: 12px 16px; color: var(--dark-color); text-decoration: none; font-size: 14px; transition: var(--transition);">
+            <i class="fas fa-cog" style="margin-right: 12px; width: 16px;"></i>
+            Configuración
+        </a>
+        <div style="height: 1px; background: var(--border-color); margin: 8px 0;"></div>
+        <a href="../logout.php" style="display: block; padding: 12px 16px; color: var(--dark-color); text-decoration: none; font-size: 14px; transition: var(--transition);">
+            <i class="fas fa-sign-out-alt" style="margin-right: 12px; width: 16px;"></i>
+            Cerrar sesión
+        </a>
+    </div>
+
     <script src="../assets/js/main.js"></script>
     <script>
-        // Datos para el gráfico (aquí podrías cargar datos reales desde PHP)
+        // Menú de usuario
+        document.querySelector('.nav-user-menu').addEventListener('click', function() {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+        });
+
+        // Cerrar menú al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.nav-user-menu') && !e.target.closest('#userDropdown')) {
+                document.getElementById('userDropdown').style.display = 'none';
+            }
+        });
+
+        // Datos para el gráfico
         <?php
         // Obtener datos de los últimos 7 días
         $stmt = $pdo->prepare("
@@ -236,7 +287,10 @@ updateUserStatistics($user['id']);
         $data = [];
         for ($i = 6; $i >= 0; $i--) {
             $date = date('Y-m-d', strtotime("-$i days"));
-            $labels[] = date('D', strtotime($date));
+            $dayName = date('D', strtotime($date));
+            $dayNames = ['Mon' => 'Lun', 'Tue' => 'Mar', 'Wed' => 'Mié', 'Thu' => 'Jue', 'Fri' => 'Vie', 'Sat' => 'Sáb', 'Sun' => 'Dom'];
+            $labels[] = $dayNames[$dayName] ?? $dayName;
+            
             $calories = 0;
             foreach ($weekData as $day) {
                 if ($day['date'] == $date) {
@@ -248,45 +302,67 @@ updateUserStatistics($user['id']);
         }
         ?>
         
-        // Sobrescribir la función de inicialización de gráficos con datos reales
-        document.addEventListener('DOMContentLoaded', function() {
-            const ctx = document.getElementById('caloriesChart');
-            if (ctx) {
-                new Chart(ctx.getContext('2d'), {
-                    type: 'line',
-                    data: {
-                        labels: <?php echo json_encode($labels); ?>,
-                        datasets: [{
-                            label: 'Calorías quemadas',
-                            data: <?php echo json_encode($data); ?>,
-                            borderColor: '#6366f1',
-                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
+        // Configuración del gráfico
+        const ctx = document.getElementById('weeklyChart');
+        if (ctx) {
+            new Chart(ctx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: <?php echo json_encode($labels); ?>,
+                    datasets: [{
+                        label: 'Calorías quemadas',
+                        data: <?php echo json_encode($data); ?>,
+                        backgroundColor: '#FF385C',
+                        borderRadius: 8,
+                        barThickness: 40
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
                         },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function(value) {
-                                        return value + ' cal';
-                                    }
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            cornerRadius: 8,
+                            titleFont: {
+                                size: 14
+                            },
+                            bodyFont: {
+                                size: 16,
+                                weight: 'bold'
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y + ' calorías';
                                 }
                             }
                         }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value + ' cal';
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
                     }
-                });
-            }
-        });
+                }
+            });
+        }
     </script>
 </body>
 </html>

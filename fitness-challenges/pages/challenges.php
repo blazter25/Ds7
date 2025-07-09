@@ -54,17 +54,6 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$user['id']]);
 $challenges = $stmt->fetchAll();
-
-// Obtener desafíos del usuario
-$stmt = $pdo->prepare("
-    SELECT uc.*, c.name, c.description, c.duration
-    FROM user_challenges uc
-    JOIN challenges c ON uc.challenge_id = c.id
-    WHERE uc.user_id = ?
-    ORDER BY uc.created_at DESC
-");
-$stmt->execute([$user['id']]);
-$userChallenges = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -78,353 +67,206 @@ $userChallenges = $stmt->fetchAll();
 <body>
     <!-- Header -->
     <header class="header">
-        <nav class="navbar container">
-            <a href="dashboard.php" class="logo">💪 Fitness Challenge</a>
-            <ul class="nav-links">
-                <li><a href="dashboard.php"><i class="fas fa-home"></i> Dashboard</a></li>
-                <li><a href="challenges.php" class="active"><i class="fas fa-trophy"></i> Desafíos</a></li>
-                <li><a href="progress.php"><i class="fas fa-chart-line"></i> Progreso</a></li>
-                <li><a href="statistics.php"><i class="fas fa-chart-bar"></i> Estadísticas</a></li>
-                <li>
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <span style="color: #6b7280;">Hola, <?php echo htmlspecialchars($user['username']); ?></span>
-                        <a href="../logout.php" class="btn btn-secondary" style="padding: 0.5rem 1rem;">
-                            <i class="fas fa-sign-out-alt"></i> Salir
-                        </a>
+        <nav class="navbar container-fluid">
+            <a href="dashboard.php" class="logo">
+                <i class="fas fa-dumbbell"></i>
+                <span>Fitness</span>
+            </a>
+            
+            <div class="nav-center">
+                <a href="dashboard.php">Dashboard</a>
+                <a href="challenges.php" class="active">Desafíos</a>
+                <a href="progress.php">Progreso</a>
+                <a href="statistics.php">Estadísticas</a>
+            </div>
+            
+            <div class="nav-right">
+                <div class="nav-user-menu">
+                    <i class="fas fa-bars" style="color: var(--gray-dark);"></i>
+                    <div class="user-avatar">
+                        <?php echo strtoupper(substr($user['username'], 0, 1)); ?>
                     </div>
-                </li>
-            </ul>
+                </div>
+            </div>
         </nav>
     </header>
 
     <!-- Contenido principal -->
-    <main class="container" style="margin-top: 2rem;">
-        <!-- Título y descripción -->
-        <div class="fade-in">
-            <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">
-                <i class="fas fa-trophy"></i> Desafíos Disponibles
+    <main class="container" style="margin-top: 40px; margin-bottom: 40px;">
+        <!-- Título -->
+        <div class="fade-in" style="margin-bottom: 32px;">
+            <h1 style="font-size: 32px; font-weight: 800; color: var(--dark-color); margin-bottom: 8px;">
+                Explora Desafíos
             </h1>
-            <p style="color: #6b7280; font-size: 1.125rem;">
-                Únete a un desafío y transforma tu vida. ¡El momento es ahora!
+            <p style="color: var(--gray-medium); font-size: 16px;">
+                Únete a desafíos diseñados para transformar tu vida y alcanzar tus metas fitness
             </p>
         </div>
 
         <?php if ($message): ?>
-            <div class="alert alert-<?php echo $messageType; ?>" style="margin-top: 1rem;">
+            <div class="alert alert-<?php echo $messageType; ?>" style="margin-bottom: 24px;">
                 <i class="fas fa-<?php echo $messageType === 'success' ? 'check' : 'exclamation'; ?>-circle"></i>
                 <?php echo $message; ?>
             </div>
         <?php endif; ?>
 
-        <!-- Tabs -->
-        <div style="margin-top: 2rem; margin-bottom: 2rem;">
-            <div style="display: flex; gap: 1rem; border-bottom: 2px solid #e5e7eb;">
-                <button class="tab-button active" onclick="showTab('available')">
-                    <i class="fas fa-list"></i> Desafíos Disponibles
-                </button>
-                <button class="tab-button" onclick="showTab('my-challenges')">
-                    <i class="fas fa-user"></i> Mis Desafíos
-                </button>
-            </div>
+        <!-- Filtros -->
+        <div class="pills-container">
+            <button class="pill active" onclick="filterChallenges('all')">
+                <i class="fas fa-th"></i> Todos
+            </button>
+            <button class="pill" onclick="filterChallenges('cardio')">
+                <i class="fas fa-running"></i> Cardio
+            </button>
+            <button class="pill" onclick="filterChallenges('strength')">
+                <i class="fas fa-dumbbell"></i> Fuerza
+            </button>
+            <button class="pill" onclick="filterChallenges('flexibility')">
+                <i class="fas fa-spa"></i> Flexibilidad
+            </button>
+            <button class="pill" onclick="filterChallenges('mixed')">
+                <i class="fas fa-random"></i> Mixto
+            </button>
         </div>
 
-        <!-- Tab: Desafíos disponibles -->
-        <div id="available-tab" class="tab-content">
-            <!-- Filtros -->
-            <div style="margin-bottom: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
-                <button class="btn btn-secondary filter-btn active" onclick="filterChallenges('all')">
-                    Todos
-                </button>
-                <button class="btn btn-secondary filter-btn" onclick="filterChallenges('cardio')">
-                    <i class="fas fa-running"></i> Cardio
-                </button>
-                <button class="btn btn-secondary filter-btn" onclick="filterChallenges('strength')">
-                    <i class="fas fa-dumbbell"></i> Fuerza
-                </button>
-                <button class="btn btn-secondary filter-btn" onclick="filterChallenges('flexibility')">
-                    <i class="fas fa-spa"></i> Flexibilidad
-                </button>
-                <button class="btn btn-secondary filter-btn" onclick="filterChallenges('mixed')">
-                    <i class="fas fa-random"></i> Mixto
-                </button>
-            </div>
-
-            <!-- Grid de desafíos -->
-            <div class="challenges-container grid-view">
-                <?php foreach ($challenges as $challenge): 
-                    // Determinar categoría basada en el nombre
-                    $category = 'mixed';
-                    if (stripos($challenge['name'], 'cardio') !== false || stripos($challenge['name'], 'corr') !== false) {
-                        $category = 'cardio';
-                    } elseif (stripos($challenge['name'], 'fuerza') !== false || stripos($challenge['name'], 'pesa') !== false) {
-                        $category = 'strength';
-                    } elseif (stripos($challenge['name'], 'yoga') !== false || stripos($challenge['name'], 'flexibilidad') !== false) {
-                        $category = 'flexibility';
-                    }
+        <!-- Grid de desafíos -->
+        <div class="cards-grid">
+            <?php foreach ($challenges as $challenge): 
+                // Determinar categoría
+                $category = 'mixed';
+                $categoryIcon = 'fas fa-trophy';
+                $categoryColor = '#FF385C';
+                
+                if (stripos($challenge['name'], 'cardio') !== false || stripos($challenge['name'], 'corr') !== false) {
+                    $category = 'cardio';
+                    $categoryIcon = 'fas fa-running';
+                    $categoryColor = '#FF385C';
+                } elseif (stripos($challenge['name'], 'fuerza') !== false || stripos($challenge['name'], 'pesa') !== false) {
+                    $category = 'strength';
+                    $categoryIcon = 'fas fa-dumbbell';
+                    $categoryColor = '#8B5CF6';
+                } elseif (stripos($challenge['name'], 'yoga') !== false || stripos($challenge['name'], 'flexibilidad') !== false) {
+                    $category = 'flexibility';
+                    $categoryIcon = 'fas fa-spa';
+                    $categoryColor = '#00A699';
+                }
+                
+                // Imagen placeholder basada en categoría
+                $images = [
+                    'cardio' => 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=400&fit=crop',
+                    'strength' => 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&h=400&fit=crop',
+                    'flexibility' => 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=400&fit=crop',
+                    'mixed' => 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400&h=400&fit=crop'
+                ];
+                
+                $imageUrl = $images[$category];
+            ?>
+                <div class="card challenge-item" data-category="<?php echo $category; ?>">
+                    <div style="position: relative;">
+                        <img src="<?php echo $imageUrl; ?>" alt="<?php echo htmlspecialchars($challenge['name']); ?>" class="card-image">
+                        <div class="card-heart <?php echo $challenge['is_joined'] ? 'active' : ''; ?>">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                            </svg>
+                        </div>
+                    </div>
                     
-                    // Iconos según categoría
-                    $icon = 'fas fa-trophy';
-                    if ($category === 'cardio') $icon = 'fas fa-running';
-                    elseif ($category === 'strength') $icon = 'fas fa-dumbbell';
-                    elseif ($category === 'flexibility') $icon = 'fas fa-spa';
-                ?>
-                    <div class="card challenge-card" data-category="<?php echo $category; ?>" style="border-left-color: 
-                        <?php 
-                        echo $category === 'cardio' ? '#ef4444' : 
-                             ($category === 'strength' ? '#8b5cf6' : 
-                             ($category === 'flexibility' ? '#10b981' : '#6366f1'));
-                        ?>">
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-                            <i class="<?php echo $icon; ?>" style="font-size: 2rem; color: 
-                                <?php 
-                                echo $category === 'cardio' ? '#ef4444' : 
-                                     ($category === 'strength' ? '#8b5cf6' : 
-                                     ($category === 'flexibility' ? '#10b981' : '#6366f1'));
-                                ?>"></i>
-                            <span class="challenge-duration">
-                                <i class="fas fa-calendar"></i> <?php echo $challenge['duration']; ?> días
+                    <div class="card-body">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                            <h3 class="card-title"><?php echo htmlspecialchars($challenge['name']); ?></h3>
+                            <span class="chip" style="background: <?php echo $categoryColor; ?>15; color: <?php echo $categoryColor; ?>;">
+                                <i class="<?php echo $categoryIcon; ?>"></i>
+                                <?php echo $challenge['duration']; ?> días
                             </span>
                         </div>
                         
-                        <h3 class="challenge-title" style="margin-bottom: 0.5rem;">
-                            <?php echo htmlspecialchars($challenge['name']); ?>
-                        </h3>
-                        
-                        <p style="color: #6b7280; margin-bottom: 1rem; font-size: 0.875rem;">
+                        <p class="card-subtitle" style="margin-bottom: 12px;">
                             <?php echo htmlspecialchars($challenge['description']); ?>
                         </p>
                         
-                        <?php if ($challenge['objectives']): ?>
-                            <div style="margin-bottom: 1rem;">
-                                <p style="font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">
-                                    <i class="fas fa-bullseye"></i> Objetivos:
-                                </p>
-                                <ul style="list-style: none; padding-left: 1rem; font-size: 0.875rem; color: #6b7280;">
-                                    <?php 
-                                    $objectives = explode(',', $challenge['objectives']);
-                                    foreach ($objectives as $objective): 
-                                    ?>
-                                        <li style="margin-bottom: 0.25rem;">
-                                            <i class="fas fa-check" style="color: #10b981; margin-right: 0.5rem;"></i>
-                                            <?php echo trim($objective); ?>
-                                        </li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            </div>
-                        <?php endif; ?>
-                        
-                        <div style="display: flex; justify-content: between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
-                            <div style="flex: 1;">
-                                <p style="font-size: 0.875rem; color: #6b7280;">
-                                    <i class="fas fa-users"></i> <?php echo $challenge['participants']; ?> participantes
-                                </p>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="card-rating">
+                                <i class="fas fa-users" style="color: var(--gray-medium);"></i>
+                                <span><?php echo $challenge['participants']; ?> participantes</span>
                             </div>
                             
                             <?php if ($challenge['is_joined']): ?>
-                                <button class="btn btn-secondary" disabled>
-                                    <i class="fas fa-check"></i> Ya estás participando
+                                <button class="btn btn-secondary" disabled style="padding: 8px 16px; font-size: 14px;">
+                                    <i class="fas fa-check"></i> Unido
                                 </button>
                             <?php else: ?>
                                 <form method="POST" style="margin: 0;">
                                     <input type="hidden" name="challenge_id" value="<?php echo $challenge['id']; ?>">
-                                    <button type="submit" name="join_challenge" class="btn btn-primary">
-                                        <i class="fas fa-plus-circle"></i> Unirme
+                                    <button type="submit" name="join_challenge" class="btn btn-primary" style="padding: 8px 16px; font-size: 14px;">
+                                        Unirme
                                     </button>
                                 </form>
                             <?php endif; ?>
                         </div>
                     </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-
-        <!-- Tab: Mis desafíos -->
-        <div id="my-challenges-tab" class="tab-content" style="display: none;">
-            <?php if (empty($userChallenges)): ?>
-                <div class="card" style="text-align: center; padding: 3rem;">
-                    <i class="fas fa-info-circle" style="font-size: 3rem; color: #6b7280; margin-bottom: 1rem;"></i>
-                    <p style="color: #6b7280; font-size: 1.125rem;">
-                        Aún no te has unido a ningún desafío.
-                    </p>
-                    <button class="btn btn-primary" style="margin-top: 1rem;" onclick="showTab('available')">
-                        <i class="fas fa-search"></i> Explorar desafíos
-                    </button>
                 </div>
-            <?php else: ?>
-                <div style="display: grid; gap: 1rem;">
-                    <?php foreach ($userChallenges as $userChallenge): 
-                        $progress = calculateChallengeProgress($userChallenge['id']);
-                        $statusColors = [
-                            'active' => '#10b981',
-                            'completed' => '#6366f1',
-                            'abandoned' => '#ef4444'
-                        ];
-                        $statusIcons = [
-                            'active' => 'play-circle',
-                            'completed' => 'check-circle',
-                            'abandoned' => 'times-circle'
-                        ];
-                    ?>
-                        <div class="card" style="border-left: 5px solid <?php echo $statusColors[$userChallenge['status']]; ?>;">
-                            <div style="display: flex; justify-content: space-between; align-items: start;">
-                                <div style="flex: 1;">
-                                    <h3 style="margin-bottom: 0.5rem;">
-                                        <?php echo htmlspecialchars($userChallenge['name']); ?>
-                                    </h3>
-                                    <p style="color: #6b7280; margin-bottom: 1rem;">
-                                        <?php echo htmlspecialchars($userChallenge['description']); ?>
-                                    </p>
-                                    
-                                    <div style="display: flex; gap: 2rem; margin-bottom: 1rem;">
-                                        <span style="font-size: 0.875rem;">
-                                            <i class="fas fa-calendar-alt"></i> 
-                                            Inicio: <?php echo formatDate($userChallenge['start_date']); ?>
-                                        </span>
-                                        <span style="font-size: 0.875rem;">
-                                            <i class="fas fa-hourglass-half"></i> 
-                                            Duración: <?php echo $userChallenge['duration']; ?> días
-                                        </span>
-                                        <span style="font-size: 0.875rem; color: <?php echo $statusColors[$userChallenge['status']]; ?>;">
-                                            <i class="fas fa-<?php echo $statusIcons[$userChallenge['status']]; ?>"></i> 
-                                            <?php echo ucfirst($userChallenge['status']); ?>
-                                        </span>
-                                    </div>
-                                    
-                                    <?php if ($userChallenge['status'] === 'active'): ?>
-                                        <div class="progress-bar">
-                                            <div class="progress-fill" data-progress="<?php echo $progress; ?>" style="width: 0%;"></div>
-                                        </div>
-                                        <p style="text-align: right; margin-top: 0.5rem; font-size: 0.875rem; color: #6b7280;">
-                                            <?php echo $progress; ?>% completado
-                                        </p>
-                                    <?php endif; ?>
-                                </div>
-                                
-                                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                                    <?php if ($userChallenge['status'] === 'active'): ?>
-                                        <a href="progress.php?challenge=<?php echo $userChallenge['id']; ?>" class="btn btn-primary">
-                                            <i class="fas fa-plus"></i> Registrar actividad
-                                        </a>
-                                        <button class="btn btn-danger" onclick="if(confirm('¿Estás seguro de abandonar este desafío?')) abandonChallenge(<?php echo $userChallenge['id']; ?>)">
-                                            <i class="fas fa-times"></i> Abandonar
-                                        </button>
-                                    <?php elseif ($userChallenge['status'] === 'completed'): ?>
-                                        <span class="btn btn-success" style="cursor: default;">
-                                            <i class="fas fa-trophy"></i> ¡Completado!
-                                        </span>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
+            <?php endforeach; ?>
         </div>
     </main>
 
+    <!-- Menú desplegable del usuario -->
+    <div id="userDropdown" style="display: none; position: absolute; top: 70px; right: 80px; background: var(--white); border-radius: var(--border-radius); box-shadow: var(--shadow-lg); padding: 8px 0; min-width: 200px; z-index: 1000;">
+        <a href="profile.php" style="display: block; padding: 12px 16px; color: var(--dark-color); text-decoration: none; font-size: 14px;">
+            <i class="fas fa-user-circle" style="margin-right: 12px; width: 16px;"></i>
+            Mi Perfil
+        </a>
+        <a href="settings.php" style="display: block; padding: 12px 16px; color: var(--dark-color); text-decoration: none; font-size: 14px;">
+            <i class="fas fa-cog" style="margin-right: 12px; width: 16px;"></i>
+            Configuración
+        </a>
+        <div style="height: 1px; background: var(--border-color); margin: 8px 0;"></div>
+        <a href="../logout.php" style="display: block; padding: 12px 16px; color: var(--dark-color); text-decoration: none; font-size: 14px;">
+            <i class="fas fa-sign-out-alt" style="margin-right: 12px; width: 16px;"></i>
+            Cerrar sesión
+        </a>
+    </div>
+
     <script src="../assets/js/main.js"></script>
     <script>
-        // Función para cambiar tabs
-        function showTab(tabName) {
-            // Ocultar todos los tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.style.display = 'none';
-            });
+        // Menú de usuario
+        document.querySelector('.nav-user-menu').addEventListener('click', function() {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+        });
+
+        // Cerrar menú al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.nav-user-menu') && !e.target.closest('#userDropdown')) {
+                document.getElementById('userDropdown').style.display = 'none';
+            }
+        });
+
+        // Función para filtrar desafíos
+        function filterChallenges(category) {
+            const challenges = document.querySelectorAll('.challenge-item');
+            const pills = document.querySelectorAll('.pill');
             
-            // Remover clase active de todos los botones
-            document.querySelectorAll('.tab-button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Mostrar tab seleccionado
-            document.getElementById(tabName + '-tab').style.display = 'block';
-            
-            // Activar botón correspondiente
+            // Actualizar botón activo
+            pills.forEach(pill => pill.classList.remove('active'));
             event.target.classList.add('active');
-        }
-        
-        // Función para abandonar desafío
-        async function abandonChallenge(challengeId) {
-            try {
-                const response = await fetch('/api/rest/activities.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        action: 'abandon_challenge',
-                        challenge_id: challengeId
-                    })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    location.reload();
+            
+            // Mostrar/ocultar desafíos
+            challenges.forEach(challenge => {
+                if (category === 'all' || challenge.dataset.category === category) {
+                    challenge.style.display = 'block';
                 } else {
-                    alert('Error al abandonar el desafío');
+                    challenge.style.display = 'none';
                 }
-            } catch (error) {
-                alert('Error al procesar la solicitud');
-            }
+            });
         }
         
-        // Estilos para tabs
-        const style = document.createElement('style');
-        style.textContent = `
-            .tab-button {
-                background: none;
-                border: none;
-                padding: 1rem 2rem;
-                font-size: 1rem;
-                font-weight: 600;
-                color: #6b7280;
-                cursor: pointer;
-                position: relative;
-                transition: all 0.3s ease;
-            }
-            
-            .tab-button:hover {
-                color: var(--primary-color);
-            }
-            
-            .tab-button.active {
-                color: var(--primary-color);
-            }
-            
-            .tab-button.active::after {
-                content: '';
-                position: absolute;
-                bottom: -2px;
-                left: 0;
-                right: 0;
-                height: 2px;
-                background: var(--primary-color);
-            }
-            
-            .filter-btn {
-                padding: 0.5rem 1rem;
-                font-size: 0.875rem;
-            }
-            
-            .filter-btn.active {
-                background: var(--primary-color);
-                color: white;
-            }
-            
-            .challenges-container {
-                display: grid;
-                gap: 1.5rem;
-            }
-            
-            .challenges-container.grid-view {
-                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            }
-            
-            .challenges-container.list-view {
-                grid-template-columns: 1fr;
-            }
-        `;
-        document.head.appendChild(style);
+        // Animar corazones
+        document.querySelectorAll('.card-heart').forEach(heart => {
+            heart.addEventListener('click', function(e) {
+                e.preventDefault();
+                this.classList.toggle('active');
+            });
+        });
     </script>
 </body>
 </html>

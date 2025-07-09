@@ -1,4 +1,5 @@
-<?php
+<!-- Opciones de exportación -->
+        <div class="card" style="<?php
 require_once '../includes/auth.php';
 require_once '../includes/functions.php';
 
@@ -288,21 +289,35 @@ $preferredView = getPreference('stats_view', 'charts');
 
         <!-- Opciones de exportación -->
         <div class="card" style="margin-top: 2rem; text-align: center;">
-            <h3 style="margin-bottom: 1rem;">
+            <h3 style="font-size: 18px; font-weight: 700; color: var(--dark-color); margin-bottom: 16px;">
                 <i class="fas fa-download"></i> Exportar Datos
             </h3>
-            <p style="color: #6b7280; margin-bottom: 1.5rem;">
+            <p style="color: var(--gray-medium); margin-bottom: 24px;">
                 Descarga tus datos para análisis externo o respaldo
             </p>
-            <div style="display: flex; gap: 1rem; justify-content: center;">
-                <button class="btn btn-primary" onclick="exportData('pdf')">
-                    <i class="fas fa-file-pdf"></i> Exportar PDF
+            
+            <!-- Selector de tipo de datos -->
+            <div style="margin-bottom: 24px;">
+                <label style="font-weight: 600; margin-right: 8px;">Tipo de datos:</label>
+                <select id="exportType" class="form-control" style="width: auto; display: inline-block;">
+                    <option value="activities">Actividades</option>
+                    <option value="statistics">Estadísticas</option>
+                    <option value="challenges">Desafíos</option>
+                </select>
+            </div>
+            
+            <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="exportDataWithType('excel')">
+                    <i class="fas fa-file-excel"></i> Excel
                 </button>
-                <button class="btn btn-secondary" onclick="exportData('csv')">
-                    <i class="fas fa-file-csv"></i> Exportar CSV
+                <button class="btn btn-secondary" onclick="exportDataWithType('json')">
+                    <i class="fas fa-file-code"></i> JSON
                 </button>
-                <button class="btn btn-secondary" onclick="exportData('json')">
-                    <i class="fas fa-file-code"></i> Exportar JSON
+                <button class="btn btn-secondary" onclick="exportDataWithType('xml')">
+                    <i class="fas fa-file-code"></i> XML
+                </button>
+                <button class="btn btn-secondary" onclick="exportDataWithType('csv')">
+                    <i class="fas fa-file-csv"></i> CSV
                 </button>
             </div>
         </div>
@@ -441,6 +456,12 @@ $preferredView = getPreference('stats_view', 'charts');
         // Guardar preferencia de visualización
         function saveViewPreference(view) {
             setCookie('stats_view', view, 30);
+        }
+        
+        // Función para exportar con tipo seleccionado
+        function exportDataWithType(format) {
+            const type = document.getElementById('exportType').value;
+            exportData(format, type);
         }
     </script>
 </body>

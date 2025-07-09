@@ -77,7 +77,7 @@ function logoutUser() {
 // Función para verificar autenticación
 function requireAuth() {
     if (!isLoggedIn()) {
-        redirect('/pages/login.php');
+        redirect('login.php');
     }
 }
 

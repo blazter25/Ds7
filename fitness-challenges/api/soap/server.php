@@ -1,70 +1,35 @@
 <?php
 require_once '../../config/database.php';
+require_once '../../includes/functions.php';
 
 // Definir la clase del servicio SOAP
 class ExerciseService {
+    private $pdo;
+    
+    public function __construct() {
+        $this->pdo = getConnection();
+    }
     
     /**
-     * Obtener información sobre ejercicios
+     * Obtener información sobre ejercicios desde la base de datos
      * @param string $type Tipo de ejercicio (cardio, strength, flexibility, all)
      * @return array
      */
     public function getExerciseInfo($type = 'all') {
+        // Información estática de ejercicios
         $exercises = [
             'cardio' => [
-                [
-                    'name' => 'Correr',
-                    'calories_per_minute' => 10,
-                    'benefits' => 'Mejora la salud cardiovascular, quema calorías, fortalece las piernas',
-                    'recommendations' => 'Comenzar con 20-30 minutos, 3 veces por semana',
-                    'equipment' => 'Zapatillas deportivas'
-                ],
-                [
-                    'name' => 'Ciclismo',
-                    'calories_per_minute' => 8,
-                    'benefits' => 'Bajo impacto, mejora resistencia, tonifica piernas',
-                    'recommendations' => 'Sesiones de 45-60 minutos, mantener cadencia de 80-100 rpm',
-                    'equipment' => 'Bicicleta, casco'
-                ],
-                [
-                    'name' => 'Natación',
-                    'calories_per_minute' => 11,
-                    'benefits' => 'Ejercicio de cuerpo completo, sin impacto articular',
-                    'recommendations' => 'Alternar estilos, descansar entre series',
-                    'equipment' => 'Traje de baño, gafas'
-                ]
+                ['name' => 'Correr', 'calories_per_minute' => 10, 'benefits' => 'Mejora la salud cardiovascular, quema calorías, fortalece las piernas', 'recommendations' => 'Comenzar con 20-30 minutos, 3 veces por semana', 'equipment' => 'Zapatillas deportivas'],
+                ['name' => 'Ciclismo', 'calories_per_minute' => 8, 'benefits' => 'Bajo impacto, mejora resistencia, tonifica piernas', 'recommendations' => 'Sesiones de 45-60 minutos, mantener cadencia de 80-100 rpm', 'equipment' => 'Bicicleta, casco'],
+                ['name' => 'Natación', 'calories_per_minute' => 11, 'benefits' => 'Ejercicio de cuerpo completo, sin impacto articular', 'recommendations' => 'Alternar estilos, descansar entre series', 'equipment' => 'Traje de baño, gafas']
             ],
             'strength' => [
-                [
-                    'name' => 'Pesas',
-                    'calories_per_minute' => 6,
-                    'benefits' => 'Aumento de masa muscular, mejora metabolismo, fortalece huesos',
-                    'recommendations' => 'Trabajar grupos musculares alternados, descanso de 48h entre sesiones del mismo grupo',
-                    'equipment' => 'Mancuernas, barras, banco'
-                ],
-                [
-                    'name' => 'CrossFit',
-                    'calories_per_minute' => 12,
-                    'benefits' => 'Acondicionamiento físico completo, mejora fuerza y resistencia',
-                    'recommendations' => 'Supervisión inicial recomendada, calentar adecuadamente',
-                    'equipment' => 'Variado: kettlebells, cuerdas, cajones'
-                ]
+                ['name' => 'Pesas', 'calories_per_minute' => 6, 'benefits' => 'Aumento de masa muscular, mejora metabolismo, fortalece huesos', 'recommendations' => 'Trabajar grupos musculares alternados, descanso de 48h entre sesiones del mismo grupo', 'equipment' => 'Mancuernas, barras, banco'],
+                ['name' => 'CrossFit', 'calories_per_minute' => 12, 'benefits' => 'Acondicionamiento físico completo, mejora fuerza y resistencia', 'recommendations' => 'Supervisión inicial recomendada, calentar adecuadamente', 'equipment' => 'Variado: kettlebells, cuerdas, cajones']
             ],
             'flexibility' => [
-                [
-                    'name' => 'Yoga',
-                    'calories_per_minute' => 3,
-                    'benefits' => 'Mejora flexibilidad, reduce estrés, fortalece core',
-                    'recommendations' => 'Práctica regular, respiración consciente',
-                    'equipment' => 'Mat de yoga, bloques opcionales'
-                ],
-                [
-                    'name' => 'Pilates',
-                    'calories_per_minute' => 4,
-                    'benefits' => 'Fortalece core, mejora postura, tonifica',
-                    'recommendations' => 'Concentración en movimientos controlados',
-                    'equipment' => 'Mat, pelota opcional'
-                ]
+                ['name' => 'Yoga', 'calories_per_minute' => 3, 'benefits' => 'Mejora flexibilidad, reduce estrés, fortalece core', 'recommendations' => 'Práctica regular, respiración consciente', 'equipment' => 'Mat de yoga, bloques opcionales'],
+                ['name' => 'Pilates', 'calories_per_minute' => 4, 'benefits' => 'Fortalece core, mejora postura, tonifica', 'recommendations' => 'Concentración en movimientos controlados', 'equipment' => 'Mat, pelota opcional']
             ]
         ];
         
@@ -74,6 +39,181 @@ class ExerciseService {
             return $exercises[$type];
         } else {
             return ['error' => 'Tipo de ejercicio no válido'];
+        }
+    }
+    
+    /**
+     * Obtener desafíos desde la base de datos
+     * @param int $userId ID del usuario (opcional)
+     * @return array
+     */
+    public function getChallengesFromDB($userId = null) {
+        try {
+            if ($userId) {
+                // Obtener desafíos del usuario específico
+                $stmt = $this->pdo->prepare("
+                    SELECT c.*, uc.status, uc.progress, uc.start_date,
+                           COUNT(DISTINCT a.id) as activity_count,
+                           SUM(a.calories_burned) as total_calories
+                    FROM challenges c
+                    JOIN user_challenges uc ON c.id = uc.challenge_id
+                    LEFT JOIN activities a ON a.user_challenge_id = uc.id
+                    WHERE uc.user_id = ?
+                    GROUP BY c.id, uc.id
+                ");
+                $stmt->execute([$userId]);
+            } else {
+                // Obtener todos los desafíos
+                $stmt = $this->pdo->prepare("
+                    SELECT c.*, COUNT(DISTINCT uc.user_id) as participants
+                    FROM challenges c
+                    LEFT JOIN user_challenges uc ON c.id = uc.challenge_id
+                    GROUP BY c.id
+                ");
+                $stmt->execute();
+            }
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            return ['error' => 'Error al obtener desafíos: ' . $e->getMessage()];
+        }
+    }
+    
+    /**
+     * Obtener estadísticas de usuario
+     * @param int $userId ID del usuario
+     * @return array
+     */
+    public function getUserStats($userId) {
+        try {
+            // Estadísticas generales
+            $stmt = $this->pdo->prepare("SELECT * FROM statistics WHERE user_id = ?");
+            $stmt->execute([$userId]);
+            $stats = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Actividades por tipo
+            $stmt = $this->pdo->prepare("
+                SELECT activity_type, COUNT(*) as count, 
+                       SUM(duration) as total_duration,
+                       SUM(calories_burned) as total_calories
+                FROM activities a
+                JOIN user_challenges uc ON a.user_challenge_id = uc.id
+                WHERE uc.user_id = ?
+                GROUP BY activity_type
+            ");
+            $stmt->execute([$userId]);
+            $activityTypes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Progreso mensual
+            $stmt = $this->pdo->prepare("
+                SELECT DATE_FORMAT(activity_date, '%Y-%m') as month,
+                       COUNT(*) as activities,
+                       SUM(calories_burned) as calories
+                FROM activities a
+                JOIN user_challenges uc ON a.user_challenge_id = uc.id
+                WHERE uc.user_id = ?
+                GROUP BY DATE_FORMAT(activity_date, '%Y-%m')
+                ORDER BY month DESC
+                LIMIT 12
+            ");
+            $stmt->execute([$userId]);
+            $monthlyProgress = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            return [
+                'general' => $stats,
+                'by_activity_type' => $activityTypes,
+                'monthly_progress' => $monthlyProgress
+            ];
+        } catch (Exception $e) {
+            return ['error' => 'Error al obtener estadísticas: ' . $e->getMessage()];
+        }
+    }
+    
+    /**
+     * Obtener actividades del usuario
+     * @param int $userId ID del usuario
+     * @param string $startDate Fecha inicio (opcional)
+     * @param string $endDate Fecha fin (opcional)
+     * @return array
+     */
+    public function getUserActivities($userId, $startDate = null, $endDate = null) {
+        try {
+            $query = "
+                SELECT a.*, c.name as challenge_name
+                FROM activities a
+                JOIN user_challenges uc ON a.user_challenge_id = uc.id
+                JOIN challenges c ON uc.challenge_id = c.id
+                WHERE uc.user_id = ?
+            ";
+            $params = [$userId];
+            
+            if ($startDate && $endDate) {
+                $query .= " AND a.activity_date BETWEEN ? AND ?";
+                $params[] = $startDate;
+                $params[] = $endDate;
+            }
+            
+            $query .= " ORDER BY a.activity_date DESC";
+            
+            $stmt = $this->pdo->prepare($query);
+            $stmt->execute($params);
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            return ['error' => 'Error al obtener actividades: ' . $e->getMessage()];
+        }
+    }
+    
+    /**
+     * Registrar nueva actividad
+     * @param int $userId ID del usuario
+     * @param int $challengeId ID del desafío
+     * @param string $activityType Tipo de actividad
+     * @param int $duration Duración en minutos
+     * @param int $calories Calorías quemadas
+     * @param string $activityDate Fecha de la actividad
+     * @param string $notes Notas opcionales
+     * @return array
+     */
+    public function registerActivity($userId, $challengeId, $activityType, $duration, $calories, $activityDate, $notes = '') {
+        try {
+            // Verificar que el usuario esté en el desafío
+            $stmt = $this->pdo->prepare("
+                SELECT id FROM user_challenges 
+                WHERE user_id = ? AND challenge_id = ? AND status = 'active'
+            ");
+            $stmt->execute([$userId, $challengeId]);
+            $userChallenge = $stmt->fetch();
+            
+            if (!$userChallenge) {
+                return ['success' => false, 'message' => 'Usuario no está en este desafío'];
+            }
+            
+            // Insertar actividad
+            $stmt = $this->pdo->prepare("
+                INSERT INTO activities (user_challenge_id, activity_type, duration, calories_burned, activity_date, notes)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([
+                $userChallenge['id'],
+                $activityType,
+                $duration,
+                $calories,
+                $activityDate,
+                $notes
+            ]);
+            
+            // Actualizar progreso y estadísticas
+            calculateChallengeProgress($userChallenge['id']);
+            updateUserStatistics($userId);
+            
+            return [
+                'success' => true,
+                'message' => 'Actividad registrada exitosamente',
+                'activity_id' => $this->pdo->lastInsertId()
+            ];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error al registrar actividad: ' . $e->getMessage()];
         }
     }
     

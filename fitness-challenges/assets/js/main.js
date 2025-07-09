@@ -273,8 +273,8 @@ async function updateRealTimeStats() {
 setInterval(updateRealTimeStats, 30000);
 
 // Función para exportar datos
-function exportData(format) {
-    window.location.href = `/api/export.php?format=${format}`;
+function exportData(format, type = 'activities') {
+    window.location.href = `/fitness-challenges/api/export.php?format=${format}&type=${type}`;
 }
 
 // Función para inicializar tooltips

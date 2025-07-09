@@ -265,9 +265,17 @@ $lastDuration = getPreference('last_duration', 30);
                 <div class="card">
                     <h2 style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
                         <span><i class="fas fa-list"></i> Actividades Recientes</span>
-                        <button class="btn btn-secondary" onclick="exportData('csv')" style="font-size: 0.875rem;">
-                            <i class="fas fa-download"></i> Exportar
-                        </button>
+                        <div style="display: flex; gap: 8px;">
+                            <select id="exportFormat" class="form-control" style="width: auto; font-size: 14px; padding: 8px 12px;">
+                                <option value="excel">Excel</option>
+                                <option value="json">JSON</option>
+                                <option value="xml">XML</option>
+                                <option value="csv">CSV</option>
+                            </select>
+                            <button class="btn btn-secondary" onclick="exportActivities()" style="font-size: 0.875rem;">
+                                <i class="fas fa-download"></i> Exportar
+                            </button>
+                        </div>
                     </h2>
                     
                     <?php if (empty($activities)): ?>
@@ -323,7 +331,7 @@ $lastDuration = getPreference('last_duration', 30);
         
         function calculateCalories() {
             const activity = document.getElementById('activity_type').value;
-            const duration = parseInt(document.getElementById('duration').value) || 0);
+            const duration = parseInt(document.getElementById('duration').value) || 0
             
             // Calorías aproximadas por minuto según actividad
             const caloriesPerMinute = {
@@ -343,6 +351,12 @@ $lastDuration = getPreference('last_duration', 30);
         
         // Calcular calorías iniciales
         calculateCalories();
+        
+        // Función para exportar actividades
+        function exportActivities() {
+            const format = document.getElementById('exportFormat').value;
+            exportData(format, 'activities');
+        }
     </script>
 </body>
 </html>

@@ -16,7 +16,18 @@ function isLoggedIn() {
 
 // Función para redirigir
 function redirect($url) {
-    header("Location: $url");
+    // Si la URL empieza con /, quitarlo para hacerlo relativo
+    if (strpos($url, '/') === 0) {
+        $url = substr($url, 1);
+    }
+    
+    // Obtener la URL base del proyecto
+    $baseUrl = dirname($_SERVER['SCRIPT_NAME']);
+    if ($baseUrl === '/' || $baseUrl === '\\') {
+        $baseUrl = '';
+    }
+    
+    header("Location: " . $baseUrl . "/" . $url);
     exit();
 }
 
