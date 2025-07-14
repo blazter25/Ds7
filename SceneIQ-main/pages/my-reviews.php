@@ -1,5 +1,5 @@
 <?php
-// pages/my-reviews.php
+// pages/my-reviews.php - Enhanced with Add Review functionality
 $pageTitle = "Mis Reseñas";
 require_once '../includes/header.php';
 
@@ -11,14 +11,33 @@ if (!$user) {
 $success = '';
 $error = '';
 
-// Manejar eliminación de reseña
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_review'])) {
-    if (!$sceneiq->validateCSRFToken($_POST['csrf_token'] ?? '')) {
-        $error = 'Token de seguridad inválido.';
-    } else {
-        $reviewId = intval($_POST['review_id']);
-        // Aquí eliminarías la reseña de la BD
-        $success = 'Reseña eliminada exitosamente.';
+// Manejar adición/edición de reseña
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['add_review']) || isset($_POST['edit_review'])) {
+        if (!$sceneiq->validateCSRFToken($_POST['csrf_token'] ?? '')) {
+            $error = 'Token de seguridad inválido.';
+        } else {
+            $contentId = intval($_POST['content_id']);
+            $rating = floatval($_POST['rating']);
+            $reviewText = trim($_POST['review_text'] ?? '');
+            $spoilerAlert = isset($_POST['spoiler_alert']);
+            
+            if (!$contentId || $rating < 0.5 || $rating > 10) {
+                $error = 'Datos inválidos. Verifica el contenido y la calificación.';
+            } else {
+                // Aquí procesarías la adición/edición en la BD
+                $action = isset($_POST['add_review']) ? 'agregada' : 'actualizada';
+                $success = "Reseña {$action} exitosamente.";
+            }
+        }
+    } elseif (isset($_POST['delete_review'])) {
+        if (!$sceneiq->validateCSRFToken($_POST['csrf_token'] ?? '')) {
+            $error = 'Token de seguridad inválido.';
+        } else {
+            $reviewId = intval($_POST['review_id']);
+            // Aquí eliminarías la reseña de la BD
+            $success = 'Reseña eliminada exitosamente.';
+        }
     }
 }
 
@@ -71,34 +90,6 @@ $myReviews = [
         'review_text' => 'Una película compleja y visualmente impresionante. Nolan nos presenta un concepto original sobre los sueños que te hace pensar durante días. La banda sonora de Hans Zimmer es perfecta.',
         'spoiler_alert' => false,
         'created_at' => '2024-12-28 16:45:00',
-        'likes' => rand(10, 50),
-        'comments' => rand(2, 15)
-    ],
-    [
-        'id' => 4,
-        'content_id' => 4,
-        'title' => 'Stranger Things',
-        'year' => 2016,
-        'type' => 'series',
-        'poster' => 'https://image.tmdb.org/t/p/w300/x2LSRK2Cm7MZhjluni1msVJ3wDF.jpg',
-        'rating' => 8.0,
-        'review_text' => 'Nostalgia pura de los 80s con una historia original y personajes entrañables. La primera temporada es perfecta, aunque las siguientes no mantienen del todo el nivel inicial.',
-        'spoiler_alert' => false,
-        'created_at' => '2024-12-20 19:20:00',
-        'likes' => rand(10, 50),
-        'comments' => rand(2, 15)
-    ],
-    [
-        'id' => 5,
-        'content_id' => 5,
-        'title' => 'The Godfather',
-        'year' => 1972,
-        'type' => 'movie',
-        'poster' => 'https://image.tmdb.org/t/p/w300/3bhkrj58Vtu7enYsRolD1fZdja1.jpg',
-        'rating' => 9.5,
-        'review_text' => 'Un clásico absoluto que define el género del crimen. La actuación de Marlon Brando es legendaria. Una historia familiar épica contada con maestría.',
-        'spoiler_alert' => false,
-        'created_at' => '2024-12-15 21:10:00',
         'likes' => rand(10, 50),
         'comments' => rand(2, 15)
     ]
@@ -162,12 +153,14 @@ switch ($sortBy) {
     <?php if ($success): ?>
         <div class="alert alert-success">
             <?php echo escape($success); ?>
+            <button class="alert-close" onclick="this.parentElement.remove()">×</button>
         </div>
     <?php endif; ?>
 
     <?php if ($error): ?>
         <div class="alert alert-error">
             <?php echo escape($error); ?>
+            <button class="alert-close" onclick="this.parentElement.remove()">×</button>
         </div>
     <?php endif; ?>
 
@@ -295,14 +288,95 @@ switch ($sortBy) {
         <?php endif; ?>
     </div>
 
-    <!-- Pagination -->
-    <?php if (count($myReviews) > 0): ?>
-        <div class="pagination-section">
-            <div class="pagination-info">
-                Mostrando todas tus reseñas
-            </div>
+    <!-- Load More Button -->
+    <?php if (count($myReviews) >= 10): ?>
+        <div class="load-more-section">
+            <button class="btn btn-secondary" onclick="loadMoreReviews()">
+                Cargar más reseñas
+            </button>
         </div>
     <?php endif; ?>
+</div>
+
+<!-- Write/Edit Review Modal -->
+<div class="modal" id="reviewModal">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h3 id="reviewModalTitle">✏️ Escribir Nueva Reseña</h3>
+            <button class="modal-close" onclick="closeReviewModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Content Search Section -->
+            <div id="contentSearchSection">
+                <div class="search-section">
+                    <h4>🔍 Buscar contenido para reseñar</h4>
+                    <div class="content-search">
+                        <input type="text" id="contentSearchInput" 
+                               placeholder="Buscar películas o series..." 
+                               class="search-input">
+                        <div id="searchResults" class="search-results"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Selected Content Display -->
+            <div id="selectedContentSection" style="display: none;">
+                <div class="selected-content">
+                    <div class="selected-content-preview" id="selectedContentPreview">
+                        <!-- Content will be populated here -->
+                    </div>
+                    <button type="button" class="btn-small btn-secondary" onclick="changeSelectedContent()">
+                        Cambiar contenido
+                    </button>
+                </div>
+            </div>
+
+            <!-- Review Form -->
+            <form id="reviewForm" method="POST">
+                <input type="hidden" name="csrf_token" value="<?php echo $sceneiq->generateCSRFToken(); ?>">
+                <input type="hidden" name="content_id" id="selectedContentId">
+                <input type="hidden" name="review_id" id="editingReviewId">
+                
+                <div class="form-group">
+                    <label>⭐ Tu calificación *</label>
+                    <div class="rating-input">
+                        <div class="rating-stars" id="ratingStars">
+                            <?php for ($i = 1; $i <= 10; $i++): ?>
+                                <span class="star" data-rating="<?php echo $i; ?>">⭐</span>
+                            <?php endfor; ?>
+                        </div>
+                        <div class="rating-display">
+                            <span id="ratingValue">0/10</span>
+                            <span class="rating-text" id="ratingText">Selecciona una calificación</span>
+                        </div>
+                        <input type="hidden" name="rating" id="ratingInput" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reviewText">📝 Tu reseña</label>
+                    <textarea id="reviewText" name="review_text" rows="6" 
+                              placeholder="Comparte tu opinión sobre esta película/serie. ¿Qué te gustó? ¿Qué no te convenció? ¿La recomendarías?"></textarea>
+                    <div class="character-count">
+                        <span id="charCount">0</span>/1000 caracteres
+                    </div>
+                </div>
+                
+                <div class="form-group form-checkbox">
+                    <input type="checkbox" id="spoilerAlert" name="spoiler_alert">
+                    <label for="spoilerAlert">⚠️ Mi reseña contiene spoilers</label>
+                    <small>Marca esta opción si tu reseña revela información importante de la trama</small>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeReviewModal()">Cancelar</button>
+                    <button type="submit" name="add_review" class="btn btn-primary" id="submitReviewBtn">
+                        Publicar Reseña
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <!-- Delete Review Modal -->
@@ -329,6 +403,7 @@ switch ($sortBy) {
 </div>
 
 <style>
+/* Previous styles remain the same... */
 .my-reviews-container {
     max-width: 1200px;
     margin: 0 auto;
@@ -624,6 +699,9 @@ switch ($sortBy) {
     border-radius: var(--border-radius-small);
     margin-bottom: var(--spacing-lg);
     border: 1px solid;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .alert-success {
@@ -638,10 +716,347 @@ switch ($sortBy) {
     color: var(--error);
 }
 
-.pagination-section {
+.alert-close {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0.25rem;
+}
+
+.load-more-section {
     text-align: center;
     margin-top: var(--spacing-lg);
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: var(--transition);
+}
+
+.modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--border-radius);
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: scale(0.8);
+    transition: var(--transition);
+}
+
+.modal-content.large {
+    max-width: 800px;
+}
+
+.modal.active .modal-content {
+    transform: scale(1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-header h3 {
+    color: var(--text-primary);
+    font-size: 1.3rem;
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
     color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: var(--transition);
+    padding: 0.5rem;
+}
+
+.modal-close:hover {
+    color: var(--text-primary);
+}
+
+.modal-body {
+    padding: var(--spacing-lg);
+}
+
+.modal-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: flex-end;
+    margin-top: var(--spacing-lg);
+}
+
+/* Review Modal Specific Styles */
+.search-section {
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    background: var(--glass-bg);
+    border-radius: var(--border-radius-small);
+}
+
+.search-section h4 {
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+    font-size: 1.1rem;
+}
+
+.content-search {
+    position: relative;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--card-bg);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius-small);
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2);
+}
+
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--card-bg);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius-small);
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1001;
+    display: none;
+    margin-top: 0.5rem;
+}
+
+.search-results.active {
+    display: block;
+}
+
+.search-result-item {
+    padding: var(--spacing-sm);
+    cursor: pointer;
+    transition: var(--transition);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+}
+
+.search-result-item:hover {
+    background: var(--glass-bg);
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-poster {
+    width: 40px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.search-result-info {
+    flex: 1;
+}
+
+.search-result-title {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+
+.search-result-meta {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.selected-content {
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    background: var(--glass-bg);
+    border-radius: var(--border-radius-small);
+    border: 2px solid var(--accent);
+}
+
+.selected-content-preview {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.selected-poster {
+    width: 80px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: var(--border-radius-small);
+}
+
+.selected-info h4 {
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    margin-bottom: 0.25rem;
+}
+
+.selected-info p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+
+.selected-synopsis {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    line-height: 1.4;
+    font-style: italic;
+}
+
+/* Rating Input Styles */
+.rating-input {
+    background: var(--glass-bg);
+    border-radius: var(--border-radius-small);
+    padding: var(--spacing-lg);
+}
+
+.rating-stars {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: var(--spacing-md);
+    justify-content: center;
+}
+
+.rating-stars .star {
+    font-size: 2rem;
+    cursor: pointer;
+    transition: var(--transition);
+    color: #666;
+    text-shadow: 0 0 5px rgba(0,0,0,0.3);
+}
+
+.rating-stars .star:hover,
+.rating-stars .star.active {
+    color: #ffd700;
+    transform: scale(1.1);
+}
+
+.rating-display {
+    text-align: center;
+}
+
+.rating-display #ratingValue {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-right: var(--spacing-sm);
+}
+
+.rating-text {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: var(--spacing-lg);
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--glass-bg);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius-small);
+    color: var(--text-primary);
+    font-size: 1rem;
+    resize: vertical;
+    min-height: 120px;
+}
+
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2);
+}
+
+.character-count {
+    text-align: right;
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.character-count.over-limit {
+    color: var(--error);
+}
+
+.form-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+}
+
+.form-checkbox input {
+    width: auto;
+    margin-top: 0.25rem;
+}
+
+.form-checkbox label {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: normal;
+}
+
+.form-checkbox small {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
 }
 
 @media (max-width: 768px) {
@@ -676,12 +1091,324 @@ switch ($sortBy) {
         justify-content: center;
         flex-wrap: wrap;
     }
+
+    .modal-content {
+        width: 95%;
+        margin: 1rem;
+    }
+
+    .selected-content-preview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .rating-stars {
+        flex-wrap: wrap;
+    }
+
+    .rating-stars .star {
+        font-size: 1.5rem;
+    }
 }
 </style>
 
 <script>
+// Global variables
+let currentRating = 0;
+let selectedContent = null;
+let editingReview = null;
+let searchTimeout;
+
+// Modal functions
+function showWriteReviewModal() {
+    resetReviewModal();
+    document.getElementById('reviewModalTitle').textContent = '✏️ Escribir Nueva Reseña';
+    document.getElementById('submitReviewBtn').textContent = 'Publicar Reseña';
+    document.getElementById('reviewModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('contentSearchInput').focus();
+}
+
+function closeReviewModal() {
+    document.getElementById('reviewModal').classList.remove('active');
+    document.body.style.overflow = '';
+    resetReviewModal();
+}
+
+function resetReviewModal() {
+    document.getElementById('reviewForm').reset();
+    document.getElementById('contentSearchSection').style.display = 'block';
+    document.getElementById('selectedContentSection').style.display = 'none';
+    document.getElementById('searchResults').innerHTML = '';
+    document.getElementById('searchResults').classList.remove('active');
+    
+    // Reset rating
+    currentRating = 0;
+    updateRatingDisplay();
+    
+    // Reset character count
+    updateCharacterCount();
+    
+    selectedContent = null;
+    editingReview = null;
+}
+
 function editReview(reviewId) {
-    showNotification('Función de edición próximamente', 'info');
+    // Find the review data (in a real app, you'd fetch from server)
+    const reviewCard = document.querySelector(`[data-review-id="${reviewId}"]`);
+    const title = reviewCard.querySelector('.content-title a').textContent;
+    const poster = reviewCard.querySelector('.content-poster').src;
+    const rating = parseFloat(reviewCard.querySelector('.rating-value').textContent);
+    const reviewText = reviewCard.querySelector('.review-content p').textContent;
+    const hasSpoilers = reviewCard.querySelector('.spoiler-warning') !== null;
+    
+    // Populate modal for editing
+    document.getElementById('reviewModalTitle').textContent = '✏️ Editar Reseña';
+    document.getElementById('submitReviewBtn').textContent = 'Actualizar Reseña';
+    document.getElementById('submitReviewBtn').name = 'edit_review';
+    document.getElementById('editingReviewId').value = reviewId;
+    
+    // Set selected content
+    selectedContent = {
+        id: reviewId, // Using review ID as content ID for demo
+        title: title,
+        poster: poster,
+        year: 2024,
+        type: 'movie'
+    };
+    
+    showSelectedContent();
+    
+    // Set form values
+    setRating(rating);
+    document.getElementById('reviewText').value = reviewText;
+    document.getElementById('spoilerAlert').checked = hasSpoilers;
+    updateCharacterCount();
+    
+    document.getElementById('reviewModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+// Content search functions
+document.getElementById('contentSearchInput').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    const query = this.value.trim();
+    
+    if (query.length >= 2) {
+        searchTimeout = setTimeout(() => {
+            searchContent(query);
+        }, 300);
+    } else {
+        hideSearchResults();
+    }
+});
+
+function searchContent(query) {
+    // Simulate search results (in a real app, this would be an AJAX call)
+    const mockResults = [
+        {
+            id: 1,
+            title: 'The Dark Knight',
+            year: 2008,
+            type: 'movie',
+            poster: 'https://image.tmdb.org/t/p/w200/qJ2tW6WMUDux911r6m7haRef0WH.jpg',
+            synopsis: 'Batman debe enfrentar a su mayor enemigo...'
+        },
+        {
+            id: 2,
+            title: 'Breaking Bad',
+            year: 2008,
+            type: 'series',
+            poster: 'https://image.tmdb.org/t/p/w200/ggFHVNu6YYI5L9pCfOacjizRGt.jpg',
+            synopsis: 'Un profesor de química se convierte...'
+        },
+        {
+            id: 3,
+            title: 'Inception',
+            year: 2010,
+            type: 'movie',
+            poster: 'https://image.tmdb.org/t/p/w200/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg',
+            synopsis: 'Un ladrón que roba secretos corporativos...'
+        }
+    ];
+    
+    // Filter results based on query
+    const filteredResults = mockResults.filter(item => 
+        item.title.toLowerCase().includes(query.toLowerCase())
+    );
+    
+    showSearchResults(filteredResults);
+}
+
+function showSearchResults(results) {
+    const resultsContainer = document.getElementById('searchResults');
+    
+    if (results.length === 0) {
+        resultsContainer.innerHTML = `
+            <div class="search-result-item">
+                <div class="search-result-info">
+                    <div class="search-result-title">No se encontraron resultados</div>
+                    <div class="search-result-meta">Intenta con otros términos de búsqueda</div>
+                </div>
+            </div>
+        `;
+    } else {
+        resultsContainer.innerHTML = results.map(item => `
+            <div class="search-result-item" onclick="selectContent(${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                <img src="${item.poster}" alt="${item.title}" class="search-result-poster">
+                <div class="search-result-info">
+                    <div class="search-result-title">${item.title}</div>
+                    <div class="search-result-meta">
+                        ${item.year} • ${item.type === 'movie' ? '🎬 Película' : '📺 Serie'}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    resultsContainer.classList.add('active');
+}
+
+function hideSearchResults() {
+    document.getElementById('searchResults').classList.remove('active');
+}
+
+function selectContent(content) {
+    selectedContent = content;
+    document.getElementById('selectedContentId').value = content.id;
+    showSelectedContent();
+    hideSearchResults();
+}
+
+function showSelectedContent() {
+    if (!selectedContent) return;
+    
+    document.getElementById('selectedContentPreview').innerHTML = `
+        <img src="${selectedContent.poster}" alt="${selectedContent.title}" class="selected-poster">
+        <div class="selected-info">
+            <h4>${selectedContent.title}</h4>
+            <p>${selectedContent.year} • ${selectedContent.type === 'movie' ? '🎬 Película' : '📺 Serie'}</p>
+            ${selectedContent.synopsis ? `<p class="selected-synopsis">${selectedContent.synopsis}</p>` : ''}
+        </div>
+    `;
+    
+    document.getElementById('contentSearchSection').style.display = 'none';
+    document.getElementById('selectedContentSection').style.display = 'block';
+}
+
+function changeSelectedContent() {
+    document.getElementById('contentSearchSection').style.display = 'block';
+    document.getElementById('selectedContentSection').style.display = 'none';
+    document.getElementById('contentSearchInput').value = '';
+    document.getElementById('contentSearchInput').focus();
+    selectedContent = null;
+    document.getElementById('selectedContentId').value = '';
+}
+
+// Rating system
+document.querySelectorAll('#ratingStars .star').forEach((star, index) => {
+    star.addEventListener('mouseenter', () => {
+        highlightStars(index + 1);
+    });
+
+    star.addEventListener('mouseleave', () => {
+        highlightStars(currentRating);
+    });
+
+    star.addEventListener('click', () => {
+        setRating(index + 1);
+    });
+});
+
+function setRating(rating) {
+    currentRating = rating;
+    document.getElementById('ratingInput').value = rating;
+    highlightStars(rating);
+    updateRatingDisplay();
+}
+
+function highlightStars(rating) {
+    document.querySelectorAll('#ratingStars .star').forEach((star, index) => {
+        if (index < rating) {
+            star.classList.add('active');
+        } else {
+            star.classList.remove('active');
+        }
+    });
+}
+
+function updateRatingDisplay() {
+    const ratingTexts = {
+        0: 'Selecciona una calificación',
+        1: 'Terrible',
+        2: 'Muy malo',
+        3: 'Malo',
+        4: 'Regular',
+        5: 'No está mal',
+        6: 'Bien',
+        7: 'Muy bien',
+        8: 'Excelente',
+        9: 'Increíble',
+        10: 'Obra maestra'
+    };
+    
+    document.getElementById('ratingValue').textContent = currentRating > 0 ? `${currentRating}/10` : '0/10';
+    document.getElementById('ratingText').textContent = ratingTexts[currentRating] || 'Selecciona una calificación';
+}
+
+// Character count
+document.getElementById('reviewText').addEventListener('input', updateCharacterCount);
+
+function updateCharacterCount() {
+    const textarea = document.getElementById('reviewText');
+    const charCount = document.getElementById('charCount');
+    const currentLength = textarea.value.length;
+    const maxLength = 1000;
+    
+    charCount.textContent = currentLength;
+    
+    if (currentLength > maxLength) {
+        charCount.parentElement.classList.add('over-limit');
+    } else {
+        charCount.parentElement.classList.remove('over-limit');
+    }
+}
+
+// Form submission
+document.getElementById('reviewForm').addEventListener('submit', function(e) {
+    if (!selectedContent && !editingReview) {
+        e.preventDefault();
+        showNotification('Por favor, selecciona un contenido para reseñar', 'error');
+        return;
+    }
+    
+    if (currentRating === 0) {
+        e.preventDefault();
+        showNotification('Por favor, selecciona una calificación', 'error');
+        return;
+    }
+    
+    const reviewText = document.getElementById('reviewText').value;
+    if (reviewText.length > 1000) {
+        e.preventDefault();
+        showNotification('La reseña no puede exceder 1000 caracteres', 'error');
+        return;
+    }
+    
+    // Form is valid, let it submit
+    showNotification('Procesando reseña...', 'info');
+});
+
+// Other functions
+function deleteReview(reviewId) {
+    document.getElementById('deleteReviewId').value = reviewId;
+    document.getElementById('deleteModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('active');
+    document.body.style.overflow = '';
 }
 
 function shareReview(reviewId) {
@@ -701,17 +1428,6 @@ function shareReview(reviewId) {
     }
 }
 
-function deleteReview(reviewId) {
-    document.getElementById('deleteReviewId').value = reviewId;
-    document.getElementById('deleteModal').classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeDeleteModal() {
-    document.getElementById('deleteModal').classList.remove('active');
-    document.body.style.overflow = '';
-}
-
 function toggleSpoiler(button) {
     const reviewCard = button.closest('.review-card');
     const spoilerContent = reviewCard.querySelector('.review-content');
@@ -725,10 +1441,6 @@ function toggleSpoiler(button) {
     }
 }
 
-function showWriteReviewModal() {
-    showNotification('Función de escritura de reseñas próximamente', 'info');
-}
-
 function exportReviews() {
     showNotification('Exportando tus reseñas...', 'info');
     setTimeout(() => {
@@ -736,12 +1448,19 @@ function exportReviews() {
     }, 2000);
 }
 
+function loadMoreReviews() {
+    showNotification('Cargando más reseñas...', 'info');
+    setTimeout(() => {
+        showNotification('No hay más reseñas para mostrar', 'info');
+    }, 1000);
+}
+
 function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     notification.className = `alert alert-${type}`;
     notification.innerHTML = `
         <span>${message}</span>
-        <button class="alert-close" onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; cursor: pointer; margin-left: 1rem;">&times;</button>
+        <button class="alert-close" onclick="this.parentElement.remove()">&times;</button>
     `;
     
     document.body.appendChild(notification);
@@ -759,18 +1478,36 @@ function showNotification(message, type = 'info') {
     }, 4000);
 }
 
-// Cerrar modal al hacer clic fuera
+// Close modals when clicking outside
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('modal')) {
+        if (e.target.id === 'reviewModal') {
+            closeReviewModal();
+        } else if (e.target.id === 'deleteModal') {
+            closeDeleteModal();
+        }
+    }
+});
+
+// Close modals with ESC key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeReviewModal();
         closeDeleteModal();
     }
 });
 
-// Cerrar modal con ESC
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeDeleteModal();
+// Hide search results when clicking outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.content-search')) {
+        hideSearchResults();
     }
+});
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    updateRatingDisplay();
+    updateCharacterCount();
 });
 </script>
 
