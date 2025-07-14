@@ -2,6 +2,9 @@
 $pageTitle = "Iniciar Sesión";
 require_once '../includes/header.php';
 
+// Definir constantes si no existen
+if (!defined('COOKIE_LIFETIME')) define('COOKIE_LIFETIME', 3600 * 24 * 30); // 30 días
+
 // Si ya está logueado, redirigir
 if ($user) {
     redirect('../index.php');
@@ -23,18 +26,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'El email no tiene un formato válido.';
     } else {
-        if ($sceneiq->loginUser($email, $password)) {
-            // Si marcó "recordarme", establecer cookie
-            if ($remember) {
-                $token = bin2hex(random_bytes(32));
-                setcookie('remember_token', $token, time() + COOKIE_LIFETIME, '/');
-                // Aquí guardarías el token en la BD asociado al usuario
+        // Intentar hacer login
+        try {
+            if (method_exists($sceneiq, 'loginUser')) {
+                $loginResult = $sceneiq->loginUser($email, $password);
+                
+                if ($loginResult) {
+                    // Si marcó "recordarme", establecer cookie
+                    if ($remember) {
+                        $token = bin2hex(random_bytes(32));
+                        setcookie('remember_token', $token, time() + COOKIE_LIFETIME, '/');
+                        // En una implementación real, guardarías el token en la BD asociado al usuario
+                    }
+                    
+                    $redirectUrl = $_GET['redirect'] ?? '../index.php';
+                    redirect($redirectUrl);
+                } else {
+                    $error = 'Email o contraseña incorrectos.';
+                }
+            } else {
+                $error = 'Sistema de login no disponible. Usa las cuentas demo.';
             }
-            
-            $redirectUrl = $_GET['redirect'] ?? '../index.php';
-            redirect($redirectUrl);
-        } else {
-            $error = 'Email o contraseña incorrectos.';
+        } catch (Exception $e) {
+            error_log("Login error: " . $e->getMessage());
+            $error = 'Error interno del servidor. Por favor, intenta más tarde.';
         }
     }
 }
@@ -94,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         <!-- Demo credentials -->
         <div class="demo-section">
-            <h4>Cuentas de prueba:</h4>
+            <h4>🎭 Cuentas de prueba:</h4>
             <div class="demo-accounts">
                 <button type="button" class="demo-btn" onclick="fillDemo('admin@sceneiq.com', 'admin123')">
                     👑 Admin Demo
@@ -103,14 +118,217 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     👤 Usuario Demo
                 </button>
             </div>
+            <p class="demo-note">
+                Haz clic en los botones para llenar automáticamente los campos de login
+            </p>
         </div>
     </div>
 </div>
 
+<style>
+.demo-section {
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
+.demo-section h4 {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-sm);
+    font-size: 0.9rem;
+}
+
+.demo-accounts {
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.demo-btn {
+    padding: 0.5rem 1rem;
+    background: var(--glass-bg);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius-small);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 0.8rem;
+}
+
+.demo-btn:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+.demo-note {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-style: italic;
+    margin-top: var(--spacing-xs);
+}
+
+.alert {
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-small);
+    border: 1px solid;
+}
+
+.alert-error {
+    background: rgba(255, 107, 107, 0.1);
+    border-color: rgba(255, 107, 107, 0.3);
+    color: var(--error);
+}
+
+.alert-success {
+    background: rgba(0, 210, 255, 0.1);
+    border-color: rgba(0, 210, 255, 0.3);
+    color: var(--success);
+}
+
+.form-group {
+    position: relative;
+    margin-bottom: var(--spacing-md);
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.8rem;
+    padding-right: 3rem;
+    background: var(--glass-bg);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius-small);
+    color: var(--text-primary);
+    transition: var(--transition);
+    font-size: 1rem;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2);
+}
+
+.form-group input::placeholder {
+    color: var(--text-secondary);
+}
+
+.form-icon {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0.2rem;
+    z-index: 2;
+}
+
+.password-toggle:hover {
+    color: var(--text-primary);
+}
+
+.form-checkbox {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.form-checkbox input {
+    width: auto;
+    margin: 0;
+    padding: 0;
+}
+
+.form-checkbox label {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: normal;
+}
+
+.btn-full {
+    width: 100%;
+    margin: var(--spacing-lg) 0;
+}
+
+.auth-footer {
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.auth-footer p {
+    margin-bottom: var(--spacing-sm);
+}
+
+.auth-footer a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
+
+.field-error {
+    color: var(--error);
+    font-size: 0.8rem;
+    margin-top: var(--spacing-xs);
+}
+
+.field-success {
+    color: var(--success);
+    font-size: 0.8rem;
+    margin-top: var(--spacing-xs);
+}
+
+.form-group input.error {
+    border-color: var(--error);
+}
+
+.form-group input.success {
+    border-color: var(--success);
+}
+
+@media (max-width: 768px) {
+    .demo-accounts {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .demo-btn {
+        width: 200px;
+    }
+}
+</style>
+
 <script>
 function togglePassword(fieldId) {
     const field = document.getElementById(fieldId);
-    const toggle = field.nextElementSibling;
+    const toggle = field.parentNode.querySelector('.password-toggle');
     
     if (field.type === 'password') {
         field.type = 'text';
@@ -124,6 +342,18 @@ function togglePassword(fieldId) {
 function fillDemo(email, password) {
     document.getElementById('email').value = email;
     document.getElementById('password').value = password;
+    
+    // Efecto visual para mostrar que se llenaron los campos
+    const emailField = document.getElementById('email');
+    const passwordField = document.getElementById('password');
+    
+    emailField.style.backgroundColor = 'rgba(0, 210, 255, 0.1)';
+    passwordField.style.backgroundColor = 'rgba(0, 210, 255, 0.1)';
+    
+    setTimeout(() => {
+        emailField.style.backgroundColor = '';
+        passwordField.style.backgroundColor = '';
+    }, 1000);
 }
 
 // Validación en tiempo real
@@ -154,6 +384,32 @@ function hideFieldError(field) {
         errorDiv.remove();
     }
 }
+
+// Focus automático en el primer campo
+document.addEventListener('DOMContentLoaded', function() {
+    const emailField = document.getElementById('email');
+    if (emailField && !emailField.value) {
+        emailField.focus();
+    }
+});
+
+// Envío del formulario con validación
+document.querySelector('.auth-form').addEventListener('submit', function(e) {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    
+    if (!email || !password) {
+        e.preventDefault();
+        alert('Por favor, completa todos los campos');
+        return;
+    }
+    
+    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+        e.preventDefault();
+        alert('Por favor, ingresa un email válido');
+        return;
+    }
+});
 </script>
 
 <?php require_once '../includes/footer.php'; ?>

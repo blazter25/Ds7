@@ -1,5 +1,5 @@
 <?php
-// SceneIQ Functions - Versión sin errores
+// SceneIQ Functions - Versión corregida con métodos completos
 // Inicializar sesión si no está iniciada
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -10,7 +10,11 @@ if (!defined('SITE_NAME')) define('SITE_NAME', 'SceneIQ');
 if (!defined('SITE_URL')) define('SITE_URL', 'http://localhost/sceneiq');
 if (!defined('SITE_DESCRIPTION')) define('SITE_DESCRIPTION', 'Descubre tu próxima obsesión cinematográfica');
 
-// Clase SceneIQ básica (funciona sin base de datos)
+// Configuración de cookies y sesiones
+if (!defined('COOKIE_LIFETIME')) define('COOKIE_LIFETIME', 3600 * 24 * 30); // 30 días
+if (!defined('SESSION_LIFETIME')) define('SESSION_LIFETIME', 3600 * 24 * 7); // 7 días
+
+// Clase SceneIQ completa (funciona sin base de datos)
 class SceneIQ {
     private $conn = null;
 
@@ -92,6 +96,154 @@ class SceneIQ {
             header('Location: index.php');
             exit();
         }
+    }
+
+    // ================================
+    // REGISTRO Y LOGIN DE USUARIOS
+    // ================================
+    
+    public function registerUser($username, $email, $password, $fullName) {
+        if ($this->conn) {
+            return $this->registerUserInDatabase($username, $email, $password, $fullName);
+        }
+        
+        // Simulación sin base de datos
+        // Verificar si el usuario ya existe (simulado)
+        if ($this->userExists($email, $username)) {
+            return false;
+        }
+        
+        // Simular registro exitoso
+        error_log("Simulated user registration: $username, $email");
+        return true;
+    }
+
+    private function registerUserInDatabase($username, $email, $password, $fullName) {
+        try {
+            // Verificar si el usuario ya existe
+            $stmt = $this->conn->prepare("SELECT id FROM users WHERE email = ? OR username = ?");
+            $stmt->execute([$email, $username]);
+            
+            if ($stmt->rowCount() > 0) {
+                return false; // Usuario ya existe
+            }
+            
+            // Insertar nuevo usuario
+            $hashedPassword = $this->hashPassword($password);
+            $stmt = $this->conn->prepare("
+                INSERT INTO users (username, email, password, full_name, created_at) 
+                VALUES (?, ?, ?, ?, NOW())
+            ");
+            
+            return $stmt->execute([$username, $email, $hashedPassword, $fullName]);
+            
+        } catch (PDOException $e) {
+            error_log("Registration error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function loginUser($email, $password) {
+        if ($this->conn) {
+            return $this->loginUserFromDatabase($email, $password);
+        }
+        
+        // Simulación sin base de datos
+        return $this->simulateLogin($email, $password);
+    }
+
+    private function loginUserFromDatabase($email, $password) {
+        try {
+            $stmt = $this->conn->prepare("
+                SELECT id, username, email, password, full_name, role, theme_preference 
+                FROM users 
+                WHERE email = ? AND is_active = 1
+            ");
+            $stmt->execute([$email]);
+            $user = $stmt->fetch();
+            
+            if ($user && $this->verifyPassword($password, $user['password'])) {
+                // Establecer sesión
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['username'] = $user['username'];
+                $_SESSION['user_email'] = $user['email'];
+                $_SESSION['full_name'] = $user['full_name'];
+                $_SESSION['user_role'] = $user['role'];
+                $_SESSION['theme_preference'] = $user['theme_preference'];
+                
+                // Actualizar último login
+                $updateStmt = $this->conn->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
+                $updateStmt->execute([$user['id']]);
+                
+                return true;
+            }
+            
+            return false;
+            
+        } catch (PDOException $e) {
+            error_log("Login error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function simulateLogin($email, $password) {
+        // Cuentas de demostración
+        $demoAccounts = [
+            'admin@sceneiq.com' => [
+                'password' => 'admin123',
+                'id' => 1,
+                'username' => 'admin',
+                'full_name' => 'Administrador SceneIQ',
+                'role' => 'admin',
+                'theme' => 'dark'
+            ],
+            'user@sceneiq.com' => [
+                'password' => 'user123',
+                'id' => 2,
+                'username' => 'user_demo',
+                'full_name' => 'Usuario Demo',
+                'role' => 'user',
+                'theme' => 'dark'
+            ]
+        ];
+        
+        if (isset($demoAccounts[$email]) && $demoAccounts[$email]['password'] === $password) {
+            $userData = $demoAccounts[$email];
+            
+            $_SESSION['user_id'] = $userData['id'];
+            $_SESSION['username'] = $userData['username'];
+            $_SESSION['user_email'] = $email;
+            $_SESSION['full_name'] = $userData['full_name'];
+            $_SESSION['user_role'] = $userData['role'];
+            $_SESSION['theme_preference'] = $userData['theme'];
+            
+            return true;
+        }
+        
+        return false;
+    }
+
+    public function logoutUser() {
+        // Destruir todas las variables de sesión
+        $_SESSION = array();
+        
+        // Destruir la cookie de sesión
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000,
+                $params["path"], $params["domain"],
+                $params["secure"], $params["httponly"]
+            );
+        }
+        
+        // Destruir la sesión
+        session_destroy();
+    }
+
+    private function userExists($email, $username) {
+        // Simulación - en un entorno real verificarías en la BD
+        $existingUsers = ['admin@sceneiq.com', 'user@sceneiq.com', 'test@test.com'];
+        return in_array($email, $existingUsers);
     }
 
     // ================================
@@ -240,6 +392,45 @@ class SceneIQ {
         }
     }
 
+    public function getContentById($contentId) {
+        if ($this->conn) {
+            return $this->getContentByIdFromDatabase($contentId);
+        }
+        
+        // Buscar en datos de ejemplo
+        $content = $this->getContent(100);
+        foreach ($content as $item) {
+            if ($item['id'] == $contentId) {
+                return $item;
+            }
+        }
+        
+        return null;
+    }
+
+    private function getContentByIdFromDatabase($contentId) {
+        try {
+            $stmt = $this->conn->prepare("
+                SELECT c.*, 
+                       GROUP_CONCAT(g.name) as genres,
+                       AVG(r.rating) as avg_rating,
+                       COUNT(r.id) as review_count
+                FROM content c
+                LEFT JOIN content_genres cg ON c.id = cg.content_id
+                LEFT JOIN genres g ON cg.genre_id = g.id
+                LEFT JOIN reviews r ON c.id = r.content_id
+                WHERE c.id = ? AND c.status = 'active'
+                GROUP BY c.id
+            ");
+            
+            $stmt->execute([$contentId]);
+            return $stmt->fetch();
+        } catch (PDOException $e) {
+            error_log("Get content by ID error: " . $e->getMessage());
+            return null;
+        }
+    }
+
     public function getRecommendations($userId, $limit = 10) {
         if ($this->conn) {
             return $this->getRecommendationsFromDatabase($userId, $limit);
@@ -309,6 +500,88 @@ class SceneIQ {
     }
 
     // ================================
+    // FUNCIONES DE USUARIO
+    // ================================
+    
+    public function getUserStats($userId) {
+        if ($this->conn) {
+            return $this->getUserStatsFromDatabase($userId);
+        }
+        
+        // Estadísticas simuladas
+        return [
+            'total_reviews' => rand(5, 25),
+            'watchlist_count' => rand(10, 50),
+            'favorites_count' => rand(5, 20),
+            'avg_rating' => round(rand(70, 95) / 10, 1)
+        ];
+    }
+
+    private function getUserStatsFromDatabase($userId) {
+        try {
+            $stmt = $this->conn->prepare("
+                SELECT 
+                    COUNT(DISTINCT r.id) as total_reviews,
+                    AVG(r.rating) as avg_rating,
+                    COUNT(DISTINCT CASE WHEN ul.list_type = 'watchlist' THEN ul.id END) as watchlist_count,
+                    COUNT(DISTINCT CASE WHEN ul.list_type = 'favorites' THEN ul.id END) as favorites_count
+                FROM users u
+                LEFT JOIN reviews r ON u.id = r.user_id
+                LEFT JOIN user_lists ul ON u.id = ul.user_id
+                WHERE u.id = ?
+                GROUP BY u.id
+            ");
+            
+            $stmt->execute([$userId]);
+            $stats = $stmt->fetch();
+            
+            return $stats ?: [
+                'total_reviews' => 0,
+                'watchlist_count' => 0,
+                'favorites_count' => 0,
+                'avg_rating' => 0.0
+            ];
+        } catch (PDOException $e) {
+            error_log("Get user stats error: " . $e->getMessage());
+            return [
+                'total_reviews' => 0,
+                'watchlist_count' => 0,
+                'favorites_count' => 0,
+                'avg_rating' => 0.0
+            ];
+        }
+    }
+
+    public function getUserList($userId, $listType, $limit = 10) {
+        if ($this->conn) {
+            return $this->getUserListFromDatabase($userId, $listType, $limit);
+        }
+        
+        // Simular lista del usuario
+        $content = $this->getContent(20);
+        return array_slice($content, 0, rand(3, $limit));
+    }
+
+    private function getUserListFromDatabase($userId, $listType, $limit) {
+        try {
+            $stmt = $this->conn->prepare("
+                SELECT c.*, ul.added_at
+                FROM user_lists ul
+                JOIN content c ON ul.content_id = c.id
+                WHERE ul.user_id = ? AND ul.list_type = ?
+                ORDER BY ul.added_at DESC
+                LIMIT ?
+            ");
+            
+            $stmt->execute([$userId, $listType, $limit]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Get user list error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    // ================================
     // FUNCIONES DE UTILIDAD
     // ================================
     
@@ -344,17 +617,66 @@ class SceneIQ {
     // ================================
     
     public function addReview($userId, $contentId, $rating, $reviewText = null, $spoilerAlert = false) {
-        // Placeholder - implementar cuando tengas BD
+        if ($this->conn) {
+            return $this->addReviewToDatabase($userId, $contentId, $rating, $reviewText, $spoilerAlert);
+        }
+        
         error_log("addReview called but no database connection");
-        return false;
+        return true; // Simular éxito
     }
 
-    public function getReviews($contentId, $limit = 10) {
-        // Placeholder - implementar cuando tengas BD
+    private function addReviewToDatabase($userId, $contentId, $rating, $reviewText, $spoilerAlert) {
+        try {
+            $stmt = $this->conn->prepare("
+                INSERT INTO reviews (user_id, content_id, rating, review_text, spoiler_alert, created_at)
+                VALUES (?, ?, ?, ?, ?, NOW())
+                ON DUPLICATE KEY UPDATE
+                rating = VALUES(rating),
+                review_text = VALUES(review_text),
+                spoiler_alert = VALUES(spoiler_alert),
+                updated_at = NOW()
+            ");
+            
+            return $stmt->execute([$userId, $contentId, $rating, $reviewText, $spoilerAlert]);
+        } catch (PDOException $e) {
+            error_log("Add review error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getReviews($contentId, $limit = 10, $offset = 0) {
+        if ($this->conn) {
+            return $this->getReviewsFromDatabase($contentId, $limit, $offset);
+        }
+        
+        // Reseñas de ejemplo
         return [];
     }
 
+    private function getReviewsFromDatabase($contentId, $limit, $offset) {
+        try {
+            $stmt = $this->conn->prepare("
+                SELECT r.*, u.username, u.full_name, u.avatar
+                FROM reviews r
+                JOIN users u ON r.user_id = u.id
+                WHERE r.content_id = ? AND r.is_approved = 1
+                ORDER BY r.created_at DESC
+                LIMIT ? OFFSET ?
+            ");
+            
+            $stmt->execute([$contentId, $limit, $offset]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Get reviews error: " . $e->getMessage());
+            return [];
+        }
+    }
+
     public function searchContent($query, $limit = 20) {
+        if ($this->conn) {
+            return $this->searchContentInDatabase($query, $limit);
+        }
+        
         // Buscar en datos de ejemplo
         $content = $this->getContent(100);
         $results = [];
@@ -369,15 +691,115 @@ class SceneIQ {
         return array_slice($results, 0, $limit);
     }
 
+    private function searchContentInDatabase($query, $limit) {
+        try {
+            $stmt = $this->conn->prepare("
+                SELECT c.*, 
+                       GROUP_CONCAT(g.name) as genres,
+                       AVG(r.rating) as avg_rating,
+                       COUNT(r.id) as review_count
+                FROM content c
+                LEFT JOIN content_genres cg ON c.id = cg.content_id
+                LEFT JOIN genres g ON cg.genre_id = g.id
+                LEFT JOIN reviews r ON c.id = r.content_id
+                WHERE c.status = 'active' 
+                AND (c.title LIKE ? OR c.synopsis LIKE ?)
+                GROUP BY c.id
+                ORDER BY 
+                    CASE WHEN c.title LIKE ? THEN 1 ELSE 2 END,
+                    c.imdb_rating DESC
+                LIMIT ?
+            ");
+            
+            $searchTerm = "%$query%";
+            $titleTerm = "%$query%";
+            $stmt->execute([$searchTerm, $searchTerm, $titleTerm, $limit]);
+            
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Search content error: " . $e->getMessage());
+            return [];
+        }
+    }
+
     public function addToUserList($userId, $contentId, $listType) {
-        // Placeholder - implementar cuando tengas BD
+        if ($this->conn) {
+            return $this->addToUserListInDatabase($userId, $contentId, $listType);
+        }
+        
         error_log("addToUserList called but no database connection");
-        return false;
+        return true; // Simular éxito
+    }
+
+    private function addToUserListInDatabase($userId, $contentId, $listType) {
+        try {
+            $stmt = $this->conn->prepare("
+                INSERT IGNORE INTO user_lists (user_id, content_id, list_type, added_at)
+                VALUES (?, ?, ?, NOW())
+            ");
+            
+            return $stmt->execute([$userId, $contentId, $listType]);
+        } catch (PDOException $e) {
+            error_log("Add to user list error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function removeFromUserList($userId, $contentId, $listType) {
+        if ($this->conn) {
+            return $this->removeFromUserListInDatabase($userId, $contentId, $listType);
+        }
+        
+        error_log("removeFromUserList called but no database connection");
+        return true; // Simular éxito
+    }
+
+    private function removeFromUserListInDatabase($userId, $contentId, $listType) {
+        try {
+            $stmt = $this->conn->prepare("
+                DELETE FROM user_lists 
+                WHERE user_id = ? AND content_id = ? AND list_type = ?
+            ");
+            
+            return $stmt->execute([$userId, $contentId, $listType]);
+        } catch (PDOException $e) {
+            error_log("Remove from user list error: " . $e->getMessage());
+            return false;
+        }
     }
 
     public function logActivity($userId, $action, $contentId = null, $metadata = null) {
-        // Placeholder - implementar cuando tengas BD
+        if ($this->conn) {
+            return $this->logActivityInDatabase($userId, $action, $contentId, $metadata);
+        }
+        
         error_log("User activity: $action");
+        return true; // Simular éxito
+    }
+
+    private function logActivityInDatabase($userId, $action, $contentId, $metadata) {
+        try {
+            $stmt = $this->conn->prepare("
+                INSERT INTO user_activity (user_id, action_type, content_id, metadata, ip_address, user_agent, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, NOW())
+            ");
+            
+            $metadataJson = $metadata ? json_encode($metadata) : null;
+            $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
+            $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+            
+            return $stmt->execute([
+                $userId, 
+                $action, 
+                $contentId, 
+                $metadataJson, 
+                $ipAddress, 
+                $userAgent
+            ]);
+        } catch (PDOException $e) {
+            error_log("Log activity error: " . $e->getMessage());
+            return false;
+        }
     }
 }
 
