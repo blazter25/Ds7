@@ -648,5 +648,4 @@ document.querySelectorAll('.content-card').forEach(card => {
                 <span class="stat-label">Géneros</span>
             </div>
             <div class="stat-item">
-                <span class="stat-number"><?php echo $sceneiq->getTotalReviews(); ?></span>
-                <span class="stat-label">Reseñas</span>
+                <span class="stat-number"><?php

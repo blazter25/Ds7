@@ -593,4 +593,4 @@ async function getRandomRecommendation() {
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-Token': window.sceneIQConfig.csrfToken
-            }  
+            }
