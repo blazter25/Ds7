@@ -3,7 +3,7 @@
 ob_start();
 
 $pageTitle = "Iniciar Sesión";
-require_once '../includes/header.php';
+require_once '../includes/functions.php';
 
 // Definir constantes si no existen
 if (!defined('COOKIE_LIFETIME')) define('COOKIE_LIFETIME', 3600 * 24 * 30);
@@ -252,32 +252,17 @@ ob_end_clean();
             color: var(--accent);
         }
 
-        .demo-section {
+        .info-section {
             margin-top: var(--spacing-lg);
             padding-top: var(--spacing-lg);
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             text-align: center;
         }
 
-        .demo-section h4 {
+        .info-section p {
+            font-size: 0.85rem;
             color: var(--text-secondary);
-            margin-bottom: var(--spacing-sm);
-            font-size: 0.9rem;
-        }
-
-        .demo-accounts {
-            display: flex;
-            flex-direction: column;
-            gap: var(--spacing-xs);
-        }
-
-        .demo-info {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            background: var(--glass-bg);
-            padding: 0.5rem;
-            border-radius: var(--border-radius-small);
-            font-family: monospace;
+            line-height: 1.4;
         }
     </style>
 </head>
@@ -328,26 +313,10 @@ ob_end_clean();
                 <p>¿No tienes cuenta? <a href="register.php">Regístrate aquí</a></p>
             </div>
             
-            <div class="demo-section">
-                <h4>🎭 Cuenta demo disponible:</h4>
-                <div class="demo-accounts">
-                    <span class="demo-info">👑 Admin: admin@sceneiq.com / admin123</span>
-                </div>
+            <div class="info-section">
+                <p>Usa tu cuenta registrada para acceder al sistema.</p>
             </div>
         </div>
     </div>
-
-    <script>
-        // Llenar campos demo
-        document.addEventListener('DOMContentLoaded', function() {
-            const emailField = document.getElementById('email');
-            const passwordField = document.getElementById('password');
-            
-            if (!emailField.value) {
-                emailField.value = 'admin@sceneiq.com';
-                passwordField.value = 'admin123';
-            }
-        });
-    </script>
 </body>
 </html>

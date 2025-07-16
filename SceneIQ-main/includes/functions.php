@@ -206,32 +206,6 @@ class SceneIQ {
     public function loginUser($email, $password) {
         $usersFile = 'data/users.txt';
         
-        // Cuentas demo por defecto
-        $demoAccounts = [
-            'admin@sceneiq.com' => [
-                'password' => 'admin123',
-                'id' => 1,
-                'username' => 'admin',
-                'full_name' => 'Administrador SceneIQ',
-                'role' => 'admin',
-                'theme' => 'dark'
-            ]
-        ];
-        
-        // Verificar cuentas demo primero
-        if (isset($demoAccounts[$email]) && $demoAccounts[$email]['password'] === $password) {
-            $userData = $demoAccounts[$email];
-            
-            $_SESSION['user_id'] = $userData['id'];
-            $_SESSION['username'] = $userData['username'];
-            $_SESSION['user_email'] = $email;
-            $_SESSION['full_name'] = $userData['full_name'];
-            $_SESSION['user_role'] = $userData['role'];
-            $_SESSION['theme_preference'] = $userData['theme'];
-            
-            return true;
-        }
-        
         // Verificar usuarios registrados
         if (file_exists($usersFile)) {
             $users = file($usersFile, FILE_IGNORE_NEW_LINES);
@@ -316,16 +290,6 @@ function redirect($url) {
 // FUNCIÓN AGREGADA: showAlert - Para mostrar alertas
 function showAlert($message, $type = 'info') {
     $_SESSION['alert'] = ['message' => $message, 'type' => $type];
-}
-
-// TEMPORAL - Para pruebas sin sistema de login
-// Simular usuario logueado para que funcione el dashboard
-if (!isset($_SESSION['user_id'])) {
-    $_SESSION['user_id'] = 1;
-    $_SESSION['username'] = 'TestUser';
-    $_SESSION['full_name'] = 'Usuario de Prueba';
-    $_SESSION['user_role'] = 'user';
-    $_SESSION['user_email'] = 'test@sceneiq.com';
 }
 
 // Obtener usuario actual
