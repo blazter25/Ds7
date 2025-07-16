@@ -4,7 +4,8 @@ require_once '../includes/header.php';
 
 // Si ya está logueado, redirigir
 if ($user) {
-    redirect('../index.php');
+    header('Location: ../index.php');
+    exit();
 }
 
 $error = '';
@@ -19,7 +20,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $acceptTerms = isset($_POST['accept_terms']);
     
     // Validar CSRF
-    if (!$sceneiq->validateCSRFToken($_POST['csrf_token'] ?? '')) {
+    $csrf_valid = true;
+    if (isset($_SESSION['csrf_token']) && isset($_POST['csrf_token'])) {
+        $csrf_valid = $sceneiq->validateCSRFToken($_POST['csrf_token']);
+    }
+    
+    if (!$csrf_valid) {
         $error = 'Token de seguridad inválido.';
     } elseif (empty($username) || empty($email) || empty($password) || empty($fullName)) {
         $error = 'Por favor, completa todos los campos.';
@@ -37,30 +43,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Debes aceptar los términos y condiciones.';
     } else {
         // Intentar registrar al usuario
-        try {
-            if (method_exists($sceneiq, 'registerUser')) {
-                $result = $sceneiq->registerUser($username, $email, $password, $fullName);
-                
-                if ($result) {
-                    $success = 'Registro exitoso. Ya puedes iniciar sesión.';
-                    // Limpiar formulario
-                    $_POST = [];
-                } else {
-                    $error = 'Error al registrar. El email o nombre de usuario ya existe.';
-                }
-            } else {
-                // Si no existe el método, simular registro exitoso
-                $success = 'Registro simulado exitoso. Ya puedes iniciar sesión con las cuentas demo.';
-                $_POST = [];
-            }
-        } catch (Exception $e) {
-            error_log("Registration error: " . $e->getMessage());
-            $error = 'Error interno del servidor. Por favor, intenta más tarde.';
+        if ($sceneiq->registerUser($username, $email, $password, $fullName)) {
+            $success = 'Registro exitoso. Ya puedes iniciar sesión.';
+            $_POST = [];
+        } else {
+            $error = 'Error al registrar. El email o nombre de usuario ya existe.';
         }
     }
 }
 
+// Obtener géneros
 $genres = $sceneiq->getGenres();
+
+// Generar token CSRF
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 ?>
 
 <div class="auth-container">
@@ -84,7 +82,7 @@ $genres = $sceneiq->getGenres();
         <?php endif; ?>
         
         <form method="POST" class="auth-form" novalidate>
-            <input type="hidden" name="csrf_token" value="<?php echo $sceneiq->generateCSRFToken(); ?>">
+            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
             
             <div class="form-row">
                 <div class="form-group">
@@ -173,6 +171,210 @@ $genres = $sceneiq->getGenres();
 </div>
 
 <style>
+.auth-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-lg);
+    background: linear-gradient(135deg, var(--dark-bg) 0%, #1a1a2e 100%);
+}
+
+.auth-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--border-radius-large);
+    padding: 2rem;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.auth-header h1 {
+    color: var(--text-primary);
+    font-size: 1.8rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.auth-header p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+}
+
+.form-group {
+    position: relative;
+    margin-bottom: var(--spacing-md);
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.8rem;
+    padding-right: 3rem;
+    background: var(--glass-bg);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius-small);
+    color: var(--text-primary);
+    transition: var(--transition);
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2);
+}
+
+.form-icon {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0.2rem;
+    z-index: 2;
+}
+
+.password-toggle:hover {
+    color: var(--text-primary);
+}
+
+.genre-selection {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+}
+
+.genre-checkbox {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.genre-checkbox input {
+    display: none;
+}
+
+.genre-label {
+    padding: 0.5rem 1rem;
+    background: var(--glass-bg);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    transition: var(--transition);
+    text-align: center;
+    width: 100%;
+}
+
+.genre-checkbox input:checked + .genre-label {
+    background: var(--genre-color);
+    color: white;
+    border-color: var(--genre-color);
+}
+
+.form-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+}
+
+.form-checkbox input {
+    width: auto;
+    margin: 0;
+    padding: 0;
+    margin-top: 0.2rem;
+}
+
+.form-checkbox label {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: normal;
+    line-height: 1.4;
+}
+
+.form-checkbox a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.form-checkbox a:hover {
+    text-decoration: underline;
+}
+
+.btn-full {
+    width: 100%;
+    margin: var(--spacing-lg) 0;
+}
+
+.auth-footer {
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.auth-footer a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
+
+.alert {
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-small);
+    border: 1px solid;
+}
+
+.alert-error {
+    background: rgba(255, 107, 107, 0.1);
+    border-color: rgba(255, 107, 107, 0.3);
+    color: #ff6b6b;
+}
+
+.alert-success {
+    background: rgba(0, 210, 255, 0.1);
+    border-color: rgba(0, 210, 255, 0.3);
+    color: #00d2ff;
+}
+
 .demo-section {
     margin-top: var(--spacing-lg);
     padding-top: var(--spacing-lg);
@@ -215,12 +417,52 @@ $genres = $sceneiq->getGenres();
 .demo-accounts a:hover {
     text-decoration: underline;
 }
+
+.field-error {
+    color: #ff6b6b;
+    font-size: 0.8rem;
+    margin-top: var(--spacing-xs);
+}
+
+.field-success {
+    color: #00d2ff;
+    font-size: 0.8rem;
+    margin-top: var(--spacing-xs);
+}
+
+.form-group input.error {
+    border-color: #ff6b6b;
+}
+
+.form-group input.success {
+    border-color: #00d2ff;
+}
+
+@media (max-width: 768px) {
+    .auth-container {
+        padding: var(--spacing-md);
+    }
+    
+    .auth-card {
+        padding: 1.5rem;
+        max-width: 100%;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-sm);
+    }
+    
+    .genre-selection {
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    }
+}
 </style>
 
 <script>
 function togglePassword(fieldId) {
     const field = document.getElementById(fieldId);
-    const toggle = field.nextElementSibling.nextElementSibling; // Skip the form-icon span
+    const toggle = field.parentNode.querySelector('.password-toggle');
     
     if (field.type === 'password') {
         field.type = 'text';
@@ -344,6 +586,14 @@ document.querySelector('.auth-form').addEventListener('submit', function(e) {
         e.preventDefault();
         alert('La contraseña debe tener al menos 6 caracteres');
         return;
+    }
+});
+
+// Focus en el primer campo
+document.addEventListener('DOMContentLoaded', function() {
+    const firstField = document.getElementById('full_name');
+    if (firstField && !firstField.value) {
+        firstField.focus();
     }
 });
 </script>

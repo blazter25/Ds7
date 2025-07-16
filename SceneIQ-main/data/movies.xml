@@ -91,4 +91,95 @@
         <tmdb_id>603</tmdb_id>
         <trailer_url>https://www.youtube.com/embed/vKQi3bBA1y8</trailer_url>
     </movie>
+
+    <movie>
+        <id>6</id>
+        <title>Interstellar</title>
+        <year>2014</year>
+        <type>movie</type>
+        <duration>169 min</duration>
+        <synopsis>Un grupo de exploradores viaja a través de un agujero de gusano en el espacio para asegurar el futuro de la humanidad.</synopsis>
+        <imdb_rating>8.6</imdb_rating>
+        <poster>https://image.tmdb.org/t/p/w500/rAiYTfKGqDCRIIqo664sY9XZIvQ.jpg</poster>
+        <backdrop>https://image.tmdb.org/t/p/w1280/xu9zaAevzQ5nnrsXN6JcahLnG4i.jpg</backdrop>
+        <genres>
+            <genre>aventura</genre>
+            <genre>drama</genre>
+            <genre>sci-fi</genre>
+        </genres>
+        <tmdb_id>157336</tmdb_id>
+        <trailer_url>https://www.youtube.com/embed/zSWdZVtXT7E</trailer_url>
+    </movie>
+    
+    <movie>
+        <id>7</id>
+        <title>Fight Club</title>
+        <year>1999</year>
+        <type>movie</type>
+        <duration>139 min</duration>
+        <synopsis>Un oficinista desilusionado forma un club secreto de peleas con un vendedor de jabón carismático.</synopsis>
+        <imdb_rating>8.8</imdb_rating>
+        <poster>https://image.tmdb.org/t/p/w500/bptfVGEQuv6vDTIMVCHjJ9Dz8PX.jpg</poster>
+        <backdrop>https://image.tmdb.org/t/p/w1280/87hTDiay2N2qWyX4Ds7ybXi9h8I.jpg</backdrop>
+        <genres>
+            <genre>drama</genre>
+        </genres>
+        <tmdb_id>550</tmdb_id>
+        <trailer_url>https://www.youtube.com/embed/qtRKdVHc-cE</trailer_url>
+    </movie>
+    
+    <movie>
+        <id>8</id>
+        <title>Forrest Gump</title>
+        <year>1994</year>
+        <type>movie</type>
+        <duration>142 min</duration>
+        <synopsis>La extraordinaria vida de Forrest Gump, un hombre con un corazón puro, a través de eventos históricos de EE.UU.</synopsis>
+        <imdb_rating>8.8</imdb_rating>
+        <poster>https://image.tmdb.org/t/p/w500/saHP97rTPS5eLmrLQEcANmKrsFl.jpg</poster>
+        <backdrop>https://image.tmdb.org/t/p/w1280/8zQ9X4fiRS9U2UOg4iEjoqgZZyQ.jpg</backdrop>
+        <genres>
+            <genre>drama</genre>
+            <genre>romance</genre>
+        </genres>
+        <tmdb_id>13</tmdb_id>
+        <trailer_url>https://www.youtube.com/embed/bLvqoHBptjg</trailer_url>
+    </movie>
+    
+    <movie>
+        <id>9</id>
+        <title>Gladiator</title>
+        <year>2000</year>
+        <type>movie</type>
+        <duration>155 min</duration>
+        <synopsis>Un general romano es traicionado y convertido en esclavo, buscando venganza como gladiador.</synopsis>
+        <imdb_rating>8.5</imdb_rating>
+        <poster>https://image.tmdb.org/t/p/w500/ty8TGRuvJLPUmAR1H1nRIsgwvim.jpg</poster>
+        <backdrop>https://image.tmdb.org/t/p/w1280/8uO0gUM8aNqYLs1OsTBQiXu0fEv.jpg</backdrop>
+        <genres>
+            <genre>accion</genre>
+            <genre>drama</genre>
+        </genres>
+        <tmdb_id>98</tmdb_id>
+        <trailer_url>https://www.youtube.com/embed/owK1qxDselE</trailer_url>
+    </movie>
+    
+    <movie>
+        <id>10</id>
+        <title>Parasite</title>
+        <year>2019</year>
+        <type>movie</type>
+        <duration>132 min</duration>
+        <synopsis>Una familia pobre se infiltra en una familia rica, pero el engaño conduce a consecuencias inesperadas.</synopsis>
+        <imdb_rating>8.5</imdb_rating>
+        <poster>https://image.tmdb.org/t/p/w500/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg</poster>
+        <backdrop>https://image.tmdb.org/t/p/w1280/ApiBzeaa95TNYliSbQ8pJv4Fje7.jpg</backdrop>
+        <genres>
+            <genre>drama</genre>
+            <genre>thriller</genre>
+            <genre>comedia</genre>
+        </genres>
+        <tmdb_id>496243</tmdb_id>
+        <trailer_url>https://www.youtube.com/embed/5xH0HfJHsaY</trailer_url>
+    </movie>
 </movies>

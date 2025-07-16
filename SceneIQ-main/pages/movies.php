@@ -54,6 +54,14 @@ if ($year) {
         
         <div class="header-stats">
             <div class="stat-item">
+                <span class="stat-number"><?php echo count($movies); ?></span>
+                <span class="stat-label">Películas</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number"><?php echo count($genres); ?></span>
+                <span class="stat-label">Géneros</span>
+            </div>
+            <div class="stat-item">
                 <span class="stat-number"><?php echo array_sum(array_column($movies, 'review_count')); ?></span>
                 <span class="stat-label">Reseñas</span>
             </div>
@@ -640,12 +648,4 @@ document.querySelectorAll('.content-card').forEach(card => {
 });
 </script>
 
-<?php require_once '../includes/footer.php'; ?> echo count($movies); ?></span>
-                <span class="stat-label">Películas</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-number"><?php echo count($genres); ?></span>
-                <span class="stat-label">Géneros</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-number"><?php
+<?php require_once '../includes/footer.php'; ?>

@@ -1,11 +1,14 @@
 <?php
 // pages/dashboard.php
 $pageTitle = "Dashboard";
+
+// Incluir functions.php que ya tiene todo lo necesario
+require_once '../includes/functions.php';
 require_once '../includes/header.php';
 
 // Verificar que el usuario esté logueado
 if (!$user) {
-    redirect('login.php');
+    redirect('../pages/login.php');
 }
 
 // Obtener datos del usuario
@@ -18,6 +21,500 @@ $recentlyViewed = $sceneiq->getUserList($user['id'], 'watched', 4);
 // Contenido trending para recomendaciones generales si no hay suficientes personalizadas
 $trendingContent = $sceneiq->getContent(6, 0);
 ?>
+
+<style>
+:root {
+    --primary-color: #667eea;
+    --secondary-color: #764ba2;
+    --accent-color: #f093fb;
+    --bg-primary: #0f0f23;
+    --bg-secondary: #1a1a2e;
+    --card-bg: #16213e;
+    --text-primary: #ffffff;
+    --text-secondary: #a0a9c0;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --border-radius: 12px;
+    --transition: all 0.3s ease;
+}
+
+body {
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+.dashboard-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 2rem;
+}
+
+.dashboard-main {
+    min-height: 100vh;
+}
+
+.welcome-section {
+    background: linear-gradient(135deg, var(--card-bg) 0%, rgba(102, 126, 234, 0.1) 100%);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border-color);
+}
+
+.welcome-content h1 {
+    font-size: 2.5rem;
+    margin: 0 0 0.5rem 0;
+    background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.welcome-content p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.user-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-color);
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.quick-actions {
+    margin-bottom: 2rem;
+}
+
+.quick-actions h2 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.action-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.action-btn {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    text-decoration: none;
+    padding: 1rem 1.5rem;
+    border-radius: var(--border-radius);
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.content-section {
+    margin-bottom: 3rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.view-all {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    transition: var(--transition);
+}
+
+.view-all:hover {
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.content-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.5rem;
+}
+
+.content-card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+    position: relative;
+}
+
+.content-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow);
+}
+
+.content-poster {
+    aspect-ratio: 2/3;
+    overflow: hidden;
+    position: relative;
+}
+
+.content-poster img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.content-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.8) 100%);
+    display: flex;
+    align-items: flex-end;
+    padding: 1rem;
+    opacity: 0;
+    transition: var(--transition);
+}
+
+.content-card:hover .content-overlay {
+    opacity: 1;
+}
+
+.content-actions {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+    justify-content: center;
+}
+
+.content-action-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: var(--transition);
+    backdrop-filter: blur(10px);
+}
+
+.content-action-btn:hover {
+    background: var(--primary-color);
+    transform: scale(1.1);
+}
+
+.content-info {
+    padding: 1rem;
+}
+
+.content-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.content-meta {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.content-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.rating-star {
+    color: #ffd700;
+}
+
+.no-content {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.no-content-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.no-content h3 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.no-content p {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--border-radius);
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition);
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.dashboard-sidebar {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    border: 1px solid var(--border-color);
+    height: fit-content;
+    position: sticky;
+    top: 2rem;
+}
+
+.sidebar-section {
+    margin-bottom: 2rem;
+}
+
+.sidebar-section:last-child {
+    margin-bottom: 0;
+}
+
+.sidebar-section h3 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.genre-preference-item {
+    margin-bottom: 1rem;
+}
+
+.genre-name {
+    display: block;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.preference-bar {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.preference-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: var(--transition);
+}
+
+.activity-item {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.activity-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.activity-content {
+    flex: 1;
+}
+
+.activity-text {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+
+.activity-time {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.progress-item {
+    margin-bottom: 1.5rem;
+}
+
+.progress-label {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.progress-bar {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+    border-radius: 4px;
+    transition: var(--transition);
+}
+
+.progress-text {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.cta-section {
+    background: linear-gradient(135deg, var(--card-bg) 0%, rgba(102, 126, 234, 0.1) 100%);
+    border-radius: var(--border-radius);
+    padding: 3rem 2rem;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+.cta-content h2 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.cta-content p {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+.cta-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+@media (max-width: 968px) {
+    .dashboard-container {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+    
+    .dashboard-sidebar {
+        position: static;
+    }
+    
+    .content-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+    
+    .user-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .action-buttons {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
 
 <div class="dashboard-container">
     <div class="dashboard-main">
@@ -51,16 +548,16 @@ $trendingContent = $sceneiq->getContent(6, 0);
         <section class="quick-actions">
             <h2>Acciones Rápidas</h2>
             <div class="action-buttons">
-                <button class="action-btn" onclick="openReviewModal()">
+                <button class="action-btn" onclick="showNotification('¡Función próximamente!', 'info')">
                     📝 Escribir Reseña
                 </button>
                 <button class="action-btn" onclick="getRandomRecommendation()">
                     🎲 Sorpréndeme
                 </button>
-                <a href="search.php" class="action-btn">
+                <a href="../pages/search.php" class="action-btn">
                     🔍 Buscar Contenido
                 </a>
-                <a href="profile.php" class="action-btn">
+                <a href="../pages/profile.php" class="action-btn">
                     ⚙️ Mi Perfil
                 </a>
             </div>
@@ -86,7 +583,48 @@ $trendingContent = $sceneiq->getContent(6, 0);
                     $displayContent = !empty($recommendations) ? $recommendations : array_slice($trendingContent, 0, 8);
                     foreach ($displayContent as $content): 
                     ?>
-                        <?php include '../includes/content-card.php'; ?>
+                        <div class="content-card" data-id="<?php echo $content['id']; ?>">
+                            <div class="content-poster">
+                                <img src="<?php echo $content['poster'] ?? '../assets/images/placeholder.jpg'; ?>" 
+                                     alt="<?php echo escape($content['title']); ?>"
+                                     onerror="this.src='../assets/images/placeholder.jpg'">
+                                
+                                <div class="content-overlay">
+                                    <div class="content-actions">
+                                        <button class="content-action-btn" onclick="addToWatchlist(<?php echo $content['id']; ?>)" title="Agregar a mi lista">
+                                            ➕
+                                        </button>
+                                        <button class="content-action-btn" onclick="addToFavorites(<?php echo $content['id']; ?>)" title="Agregar a favoritos">
+                                            ❤️
+                                        </button>
+                                        <button class="content-action-btn" onclick="viewContent(<?php echo $content['id']; ?>)" title="Ver detalles">
+                                            👁️
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="content-info">
+                                <h3 class="content-title"><?php echo escape($content['title']); ?></h3>
+                                
+                                <div class="content-meta">
+                                    <span><?php echo $content['year']; ?></span>
+                                    <span>•</span>
+                                    <span><?php echo $content['type'] === 'movie' ? 'Película' : 'Serie'; ?></span>
+                                    <?php if (isset($content['duration'])): ?>
+                                        <span>•</span>
+                                        <span><?php echo $content['duration']; ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <?php if (isset($content['imdb_rating']) && $content['imdb_rating'] > 0): ?>
+                                    <div class="content-rating">
+                                        <span class="rating-star">⭐</span>
+                                        <span><?php echo number_format($content['imdb_rating'], 1); ?></span>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
@@ -97,11 +635,25 @@ $trendingContent = $sceneiq->getContent(6, 0);
         <section class="content-section">
             <div class="section-header">
                 <h2 class="section-title">📚 Visto Recientemente</h2>
-                <a href="profile.php?tab=watched" class="view-all">Ver todo</a>
+                <a href="../pages/profile.php?tab=watched" class="view-all">Ver todo</a>
             </div>
             <div class="content-grid">
                 <?php foreach ($recentlyViewed as $content): ?>
-                    <?php include '../includes/content-card.php'; ?>
+                    <div class="content-card" data-id="<?php echo $content['id']; ?>">
+                        <div class="content-poster">
+                            <img src="<?php echo $content['poster'] ?? '../assets/images/placeholder.jpg'; ?>" 
+                                 alt="<?php echo escape($content['title']); ?>"
+                                 onerror="this.src='../assets/images/placeholder.jpg'">
+                        </div>
+                        <div class="content-info">
+                            <h3 class="content-title"><?php echo escape($content['title']); ?></h3>
+                            <div class="content-meta">
+                                <span><?php echo $content['year']; ?></span>
+                                <span>•</span>
+                                <span><?php echo $content['type'] === 'movie' ? 'Película' : 'Serie'; ?></span>
+                            </div>
+                        </div>
+                    </div>
                 <?php endforeach; ?>
             </div>
         </section>
@@ -112,11 +664,25 @@ $trendingContent = $sceneiq->getContent(6, 0);
         <section class="content-section">
             <div class="section-header">
                 <h2 class="section-title">📋 Mi Lista de Seguimiento</h2>
-                <a href="profile.php?tab=watchlist" class="view-all">Ver todo (<?php echo $userStats['watchlist_count']; ?>)</a>
+                <a href="../pages/profile.php?tab=watchlist" class="view-all">Ver todo (<?php echo $userStats['watchlist_count']; ?>)</a>
             </div>
             <div class="content-grid">
                 <?php foreach ($watchlist as $content): ?>
-                    <?php include '../includes/content-card.php'; ?>
+                    <div class="content-card" data-id="<?php echo $content['id']; ?>">
+                        <div class="content-poster">
+                            <img src="<?php echo $content['poster'] ?? '../assets/images/placeholder.jpg'; ?>" 
+                                 alt="<?php echo escape($content['title']); ?>"
+                                 onerror="this.src='../assets/images/placeholder.jpg'">
+                        </div>
+                        <div class="content-info">
+                            <h3 class="content-title"><?php echo escape($content['title']); ?></h3>
+                            <div class="content-meta">
+                                <span><?php echo $content['year']; ?></span>
+                                <span>•</span>
+                                <span><?php echo $content['type'] === 'movie' ? 'Película' : 'Serie'; ?></span>
+                            </div>
+                        </div>
+                    </div>
                 <?php endforeach; ?>
             </div>
         </section>
@@ -127,11 +693,25 @@ $trendingContent = $sceneiq->getContent(6, 0);
         <section class="content-section">
             <div class="section-header">
                 <h2 class="section-title">❤️ Mis Favoritos</h2>
-                <a href="profile.php?tab=favorites" class="view-all">Ver todo (<?php echo $userStats['favorites_count']; ?>)</a>
+                <a href="../pages/profile.php?tab=favorites" class="view-all">Ver todo (<?php echo $userStats['favorites_count']; ?>)</a>
             </div>
             <div class="content-grid">
                 <?php foreach ($favorites as $content): ?>
-                    <?php include '../includes/content-card.php'; ?>
+                    <div class="content-card" data-id="<?php echo $content['id']; ?>">
+                        <div class="content-poster">
+                            <img src="<?php echo $content['poster'] ?? '../assets/images/placeholder.jpg'; ?>" 
+                                 alt="<?php echo escape($content['title']); ?>"
+                                 onerror="this.src='../assets/images/placeholder.jpg'">
+                        </div>
+                        <div class="content-info">
+                            <h3 class="content-title"><?php echo escape($content['title']); ?></h3>
+                            <div class="content-meta">
+                                <span><?php echo $content['year']; ?></span>
+                                <span>•</span>
+                                <span><?php echo $content['type'] === 'movie' ? 'Película' : 'Serie'; ?></span>
+                            </div>
+                        </div>
+                    </div>
                 <?php endforeach; ?>
             </div>
         </section>
@@ -146,8 +726,8 @@ $trendingContent = $sceneiq->getContent(6, 0);
                     <p>Para obtener recomendaciones personalizadas, interactúa con el contenido:</p>
                     <div class="cta-buttons">
                         <a href="../index.php" class="btn btn-primary">Explorar Contenido</a>
-                        <a href="movies.php" class="btn btn-secondary">Ver Películas</a>
-                        <a href="series.php" class="btn btn-secondary">Ver Series</a>
+                        <a href="../pages/movies.php" class="btn btn-secondary">Ver Películas</a>
+                        <a href="../pages/series.php" class="btn btn-secondary">Ver Series</a>
                     </div>
                 </div>
             </div>
@@ -173,9 +753,6 @@ $trendingContent = $sceneiq->getContent(6, 0);
                         </div>
                     </div>
                 <?php endforeach; ?>
-                <a href="preferences.php" class="btn-small btn-secondary" style="margin-top: 1rem; width: 100%;">
-                    Configurar Preferencias
-                </a>
             </div>
         </div>
 
@@ -183,7 +760,6 @@ $trendingContent = $sceneiq->getContent(6, 0);
         <div class="sidebar-section">
             <h3>Actividad Reciente</h3>
             <div class="activity-feed">
-                <!-- Simulated activity items -->
                 <?php if (($userStats['total_reviews'] ?? 0) > 0): ?>
                     <div class="activity-item">
                         <span class="activity-icon">📝</span>
@@ -254,133 +830,178 @@ $trendingContent = $sceneiq->getContent(6, 0);
     </div>
 </div>
 
-<!-- Review Modal (Quick Review) -->
-<div class="modal" id="quickReviewModal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>✏️ Escribir Reseña Rápida</h3>
-            <button class="modal-close" onclick="closeQuickReviewModal()">&times;</button>
-        </div>
-        <div class="modal-body">
-            <div id="contentSearch" style="margin-bottom: 1rem;">
-                <input type="text" id="searchInput" placeholder="Buscar película o serie..." 
-                       class="search-input" style="width: 100%;">
-                <div id="searchResults" class="search-dropdown"></div>
-            </div>
-            
-            <div id="selectedContent" style="display: none;">
-                <div class="selected-content">
-                    <div class="content-preview"></div>
-                </div>
-            </div>
-            
-            <form id="quickReviewForm">
-                <input type="hidden" name="csrf_token" value="<?php echo $sceneiq->generateCSRFToken(); ?>">
-                <input type="hidden" name="content_id" id="selectedContentId">
-                
-                <div class="form-group">
-                    <label>Calificación</label>
-                    <div class="rating-input">
-                        <div class="stars" id="quickRatingStars">
-                            <?php for ($i = 1; $i <= 10; $i++): ?>
-                                <span class="star" data-rating="<?php echo $i; ?>">⭐</span>
-                            <?php endfor; ?>
-                        </div>
-                        <span id="quickRatingValue">0/10</span>
-                        <input type="hidden" name="rating" id="quickRatingInput" value="0">
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="quickReviewText">Tu reseña (opcional)</label>
-                    <textarea id="quickReviewText" name="review_text" rows="4" 
-                              placeholder="¿Qué te pareció?"></textarea>
-                </div>
-                
-                <div class="form-group form-checkbox">
-                    <input type="checkbox" id="quickSpoilerAlert" name="spoiler_alert">
-                    <label for="quickSpoilerAlert">Contiene spoilers</label>
-                </div>
-                
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeQuickReviewModal()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Publicar Reseña</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <script>
-// Quick Review Modal
-function openReviewModal() {
-    document.getElementById('quickReviewModal').classList.add('active');
-    document.body.style.overflow = 'hidden';
-    document.getElementById('searchInput').focus();
-}
+// Funciones JavaScript para el dashboard
 
-function closeQuickReviewModal() {
-    document.getElementById('quickReviewModal').classList.remove('active');
-    document.body.style.overflow = '';
-    // Reset form
-    document.getElementById('quickReviewForm').reset();
-    document.getElementById('selectedContent').style.display = 'none';
-    document.getElementById('contentSearch').style.display = 'block';
-    document.getElementById('quickRatingValue').textContent = '0/10';
-    document.querySelectorAll('#quickRatingStars .star').forEach(star => star.classList.remove('active'));
-}
-
-// Search functionality for quick review
-let searchTimeout;
-document.getElementById('searchInput').addEventListener('input', function() {
-    clearTimeout(searchTimeout);
-    const query = this.value.trim();
+// Función para mostrar notificaciones
+function showNotification(message, type = 'info') {
+    // Crear el elemento de notificación
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        z-index: 10000;
+        min-width: 300px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        backdrop-filter: blur(10px);
+        animation: slideInRight 0.3s ease;
+        ${type === 'success' ? 'background: linear-gradient(135deg, #4CAF50, #45a049);' : 
+          type === 'error' ? 'background: linear-gradient(135deg, #f44336, #d32f2f);' : 
+          type === 'warning' ? 'background: linear-gradient(135deg, #ff9800, #f57c00);' :
+          'background: linear-gradient(135deg, #2196F3, #1976D2);'}
+    `;
     
-    if (query.length >= 2) {
-        searchTimeout = setTimeout(() => {
-            searchContent(query);
-        }, 300);
-    } else {
-        document.getElementById('searchResults').style.display = 'none';
-    }
-});
-
-async function searchContent(query) {
-    try {
-        const response = await fetch('../api/search.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': window.sceneIQConfig.csrfToken
-            }
-        });
-
-        const data = await response.json();
-        
-        if (data.success && data.content) {
-            showRandomRecommendationModal(data.content);
-        } else {
-            showNotification('No se pudo obtener una recomendación', 'warning');
+    notification.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; margin-left: 1rem;">×</button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove después de 5 segundos
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
         }
-    } catch (error) {
-        console.error('Error getting random recommendation:', error);
-        showNotification('Error al obtener recomendación', 'error');
+    }, 5000);
+}
+
+// Agregar animaciones CSS
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
     }
+    @keyframes slideOutRight {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
+
+// Funciones para las acciones de contenido
+function addToWatchlist(contentId) {
+    console.log('Agregando a watchlist:', contentId);
+    showNotification('¡Agregado a tu lista de seguimiento!', 'success');
+}
+
+function addToFavorites(contentId) {
+    console.log('Agregando a favoritos:', contentId);
+    showNotification('¡Agregado a tus favoritos!', 'success');
+}
+
+function viewContent(contentId) {
+    console.log('Viendo contenido:', contentId);
+    showNotification('Redirigiendo a detalles...', 'info');
+    // En una app real, redirigirías a la página de detalles
+    // window.location.href = `../pages/content.php?id=${contentId}`;
+}
+
+// Función para obtener recomendación aleatoria
+function getRandomRecommendation() {
+    const recommendations = [
+        {
+            id: 7,
+            title: 'Parasite',
+            year: 2019,
+            type: 'movie',
+            duration: '132 min',
+            synopsis: 'Una familia pobre se infiltra en la vida de una familia rica con consecuencias inesperadas.',
+            imdb_rating: 8.6,
+            poster: 'https://image.tmdb.org/t/p/w500/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg'
+        },
+        {
+            id: 8,
+            title: 'The Crown',
+            year: 2016,
+            type: 'series',
+            duration: '6 temporadas',
+            synopsis: 'La historia de la Reina Isabel II y la familia real británica a lo largo de las décadas.',
+            imdb_rating: 8.7,
+            poster: 'https://image.tmdb.org/t/p/w500/4Sp6HPMfJykwTC4f0VHGE0GDkL8.jpg'
+        },
+        {
+            id: 9,
+            title: 'Dune',
+            year: 2021,
+            type: 'movie',
+            duration: '155 min',
+            synopsis: 'Paul Atreides lidera una rebelión para liberar su planeta natal del control de fuerzas malignas.',
+            imdb_rating: 8.0,
+            poster: 'https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg'
+        }
+    ];
+    
+    const randomContent = recommendations[Math.floor(Math.random() * recommendations.length)];
+    showRandomRecommendationModal(randomContent);
 }
 
 function showRandomRecommendationModal(content) {
     const modal = document.createElement('div');
     modal.className = 'modal active';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        backdrop-filter: blur(5px);
+    `;
+    
     modal.innerHTML = `
-        <div class="modal-content" style="max-width: 600px;">
-            <div class="modal-header">
-                <h3>🎲 Tu Recomendación Sorpresa</h3>
-                <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+        <div style="
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+        ">
+            <div style="
+                padding: 1.5rem;
+                border-bottom: 1px solid var(--border-color);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            ">
+                <h3 style="margin: 0; color: var(--text-primary); font-size: 1.5rem;">🎲 Tu Recomendación Sorpresa</h3>
+                <button onclick="this.closest('.modal').remove(); document.body.style.overflow = '';" 
+                        style="
+                            background: none;
+                            border: none;
+                            color: var(--text-secondary);
+                            font-size: 1.5rem;
+                            cursor: pointer;
+                            padding: 0.5rem;
+                            border-radius: 50%;
+                            transition: var(--transition);
+                        "
+                        onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+                        onmouseout="this.style.background='none'">×</button>
             </div>
-            <div class="modal-body">
+            <div style="padding: 2rem;">
                 <div style="display: flex; gap: 1.5rem; align-items: flex-start;">
-                    <img src="${content.poster || '../assets/images/placeholder.jpg'}" 
-                         style="width: 150px; height: 225px; object-fit: cover; border-radius: 12px; flex-shrink: 0;">
+                    <img src="${content.poster}" 
+                         style="width: 150px; height: 225px; object-fit: cover; border-radius: 12px; flex-shrink: 0;"
+                         onerror="this.src='../assets/images/placeholder.jpg'">
                     <div style="flex: 1;">
                         <h4 style="color: var(--text-primary); font-size: 1.5rem; margin-bottom: 0.5rem;">${content.title}</h4>
                         <p style="color: var(--text-secondary); margin-bottom: 1rem;">
@@ -388,209 +1009,75 @@ function showRandomRecommendationModal(content) {
                             ${content.duration ? ' • ' + content.duration : ''}
                         </p>
                         <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
-                            <span style="color: #ffd700;">⭐</span>
-                            <span style="color: var(--text-primary); font-weight: 600;">${content.imdb_rating}</span>
+                            <span style="color: #ffd700; font-size: 1.2rem;">⭐</span>
+                            <span style="color: var(--text-primary); font-weight: 600; font-size: 1.1rem;">${content.imdb_rating}</span>
                         </div>
                         <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.5rem;">
                             ${content.synopsis || 'Sin descripción disponible.'}
                         </p>
-                        <div style="display: flex; gap: 1rem;">
-                            <a href="content.php?id=${content.id}" class="btn btn-primary">Ver Detalles</a>
-                            <button class="btn btn-secondary" onclick="addToWatchlist(${content.id}); this.closest('.modal').remove();">+ Mi Lista</button>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <button onclick="viewContent(${content.id}); this.closest('.modal').remove(); document.body.style.overflow = '';" 
+                                    class="btn btn-primary">Ver Detalles</button>
+                            <button onclick="addToWatchlist(${content.id}); this.closest('.modal').remove(); document.body.style.overflow = '';" 
+                                    class="btn btn-secondary">+ Mi Lista</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     `;
+    
     document.body.appendChild(modal);
     document.body.style.overflow = 'hidden';
-}
-
-// Refresh recommendations
-async function refreshRecommendations() {
-    try {
-        const response = await fetch('../api/refresh-recommendations.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': window.sceneIQConfig.csrfToken
-            }
-        });
-
-        const data = await response.json();
-        
-        if (data.success) {
-            showNotification('Recomendaciones actualizadas', 'success');
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
+    
+    // Cerrar modal al hacer clic fuera
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.remove();
+            document.body.style.overflow = '';
         }
-    } catch (error) {
-        console.error('Error refreshing recommendations:', error);
-        // Fallback: just reload the page
-        window.location.reload();
-    }
+    });
 }
 
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type}`;
-    notification.innerHTML = `
-        <span>${message}</span>
-        <button class="alert-close" onclick="this.parentElement.remove()">×</button>
-    `;
+// Función para actualizar recomendaciones
+function refreshRecommendations() {
+    showNotification('Actualizando recomendaciones...', 'info');
     
-    document.body.appendChild(notification);
-    
+    // Simular carga
     setTimeout(() => {
-        if (notification.parentElement) {
-            notification.remove();
-        }
-    }, 5000);
+        showNotification('¡Recomendaciones actualizadas!', 'success');
+        // En una app real, recargarías la página o harías una petición AJAX
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+    }, 1500);
 }
 
-// Quick review form submission
-document.getElementById('quickReviewForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const data = Object.fromEntries(formData);
-    
-    if (!data.content_id) {
-        showNotification('Por favor, selecciona un contenido', 'error');
-        return;
-    }
-    
-    if (data.rating == 0) {
-        showNotification('Por favor, selecciona una calificación', 'error');
-        return;
-    }
-    
-    try {
-        const response = await fetch('../api/reviews.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': window.sceneIQConfig.csrfToken
-            },
-            body: JSON.stringify(data)
+// Función para manejar errores de imágenes
+document.addEventListener('DOMContentLoaded', function() {
+    const images = document.querySelectorAll('img');
+    images.forEach(img => {
+        img.addEventListener('error', function() {
+            this.src = '../assets/images/placeholder.jpg';
+        });
+    });
+});
+
+// Añadir efecto de hover mejorado a las tarjetas
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.content-card');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-8px) scale(1.02)';
         });
         
-        const result = await response.json();
-        
-        if (result.success) {
-            showNotification('Reseña publicada exitosamente', 'success');
-            closeQuickReviewModal();
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-        } else {
-            showNotification(result.message || 'Error al publicar la reseña', 'error');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showNotification('Error al publicar la reseña', 'error');
-    }
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+    });
 });
+
+console.log('Dashboard cargado correctamente ✅');
 </script>
 
 <?php require_once '../includes/footer.php'; ?>
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': window.sceneIQConfig.csrfToken
-            },
-            body: JSON.stringify({ query: query })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success && data.results.length > 0) {
-            showSearchResults(data.results.slice(0, 5));
-        } else {
-            document.getElementById('searchResults').style.display = 'none';
-        }
-    } catch (error) {
-        console.error('Search error:', error);
-    }
-}
-
-function showSearchResults(results) {
-    const resultsDiv = document.getElementById('searchResults');
-    resultsDiv.innerHTML = results.map(item => `
-        <div class="search-result-item" onclick="selectContent(${item.id}, '${item.title}', '${item.year}', '${item.type}', '${item.poster || ''}')">
-            <div style="display: flex; gap: 0.75rem; align-items: center;">
-                <img src="${item.poster || '../assets/images/placeholder.jpg'}" 
-                     style="width: 40px; height: 60px; object-fit: cover; border-radius: 4px;">
-                <div>
-                    <div style="color: var(--text-primary); font-weight: 600; font-size: 0.9rem;">${item.title}</div>
-                    <div style="color: var(--text-secondary); font-size: 0.8rem;">${item.year} • ${item.type === 'movie' ? 'Película' : 'Serie'}</div>
-                </div>
-            </div>
-        </div>
-    `).join('');
-    resultsDiv.style.display = 'block';
-}
-
-function selectContent(id, title, year, type, poster) {
-    document.getElementById('selectedContentId').value = id;
-    document.getElementById('contentSearch').style.display = 'none';
-    document.getElementById('selectedContent').style.display = 'block';
-    
-    document.querySelector('.content-preview').innerHTML = `
-        <div style="display: flex; gap: 1rem; align-items: center;">
-            <img src="${poster || '../assets/images/placeholder.jpg'}" 
-                 style="width: 60px; height: 90px; object-fit: cover; border-radius: 8px;">
-            <div>
-                <h4 style="color: var(--text-primary); margin-bottom: 0.5rem;">${title}</h4>
-                <p style="color: var(--text-secondary); font-size: 0.9rem;">${year} • ${type === 'movie' ? 'Película' : 'Serie'}</p>
-            </div>
-        </div>
-    `;
-    
-    document.getElementById('searchResults').style.display = 'none';
-}
-
-// Quick rating system
-document.addEventListener('DOMContentLoaded', function() {
-    const quickStars = document.querySelectorAll('#quickRatingStars .star');
-    const quickRatingValue = document.getElementById('quickRatingValue');
-    const quickRatingInput = document.getElementById('quickRatingInput');
-    let currentQuickRating = 0;
-
-    quickStars.forEach((star, index) => {
-        star.addEventListener('mouseenter', () => {
-            highlightQuickStars(index + 1);
-        });
-
-        star.addEventListener('mouseleave', () => {
-            highlightQuickStars(currentQuickRating);
-        });
-
-        star.addEventListener('click', () => {
-            currentQuickRating = index + 1;
-            highlightQuickStars(currentQuickRating);
-            quickRatingValue.textContent = `${currentQuickRating}/10`;
-            quickRatingInput.value = currentQuickRating;
-        });
-    });
-
-    function highlightQuickStars(rating) {
-        quickStars.forEach((star, index) => {
-            if (index < rating) {
-                star.classList.add('active');
-            } else {
-                star.classList.remove('active');
-            }
-        });
-    }
-});
-
-// Random recommendation
-async function getRandomRecommendation() {
-    try {
-        const response = await fetch('../api/random-recommendation.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': window.sceneIQConfig.csrfToken
-            }

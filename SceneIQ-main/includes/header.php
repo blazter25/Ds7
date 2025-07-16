@@ -10,75 +10,53 @@ if ($is_admin) {
     $base_path = '../../';
 }
 
-// Incluir configuración
-$config_loaded = false;
+// Inicializar sesión si no está iniciada
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// Intentar cargar funciones principales
+// Definir constantes básicas si no existen
+if (!defined('SITE_NAME')) define('SITE_NAME', 'SceneIQ');
+if (!defined('SITE_DESCRIPTION')) define('SITE_DESCRIPTION', 'Descubre tu próxima obsesión cinematográfica');
+
+// Intentar cargar funciones principales PRIMERO
 if (file_exists($base_path . 'includes/functions.php')) {
     require_once $base_path . 'includes/functions.php';
-    $config_loaded = true;
-} elseif (file_exists($base_path . 'config/simple_config.php')) {
-    require_once $base_path . 'config/simple_config.php';
-    $config_loaded = true;
 }
 
-// Si no se pudo cargar configuración, usar valores por defecto
-if (!$config_loaded) {
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-    
-    if (!defined('SITE_NAME')) define('SITE_NAME', 'SceneIQ');
-    if (!defined('SITE_DESCRIPTION')) define('SITE_DESCRIPTION', 'Descubre tu próxima obsesión cinematográfica');
-    
-    // Funciones básicas de fallback
-    if (!function_exists('getCurrentUser')) {
-        function getCurrentUser() {
-            if (!isset($_SESSION['user_id'])) return null;
-            return [
-                'id' => $_SESSION['user_id'] ?? 1,
-                'username' => $_SESSION['username'] ?? 'Usuario',
-                'email' => $_SESSION['user_email'] ?? '',
-                'role' => $_SESSION['user_role'] ?? 'user',
-                'full_name' => $_SESSION['full_name'] ?? 'Usuario Demo',
-                'theme' => $_SESSION['theme_preference'] ?? 'dark'
-            ];
-        }
-    }
-    
-    if (!function_exists('getAlert')) {
-        function getAlert() {
-            if (isset($_SESSION['alert'])) {
-                $alert = $_SESSION['alert'];
-                unset($_SESSION['alert']);
-                return $alert;
-            }
-            return null;
-        }
-    }
-    
-    if (!function_exists('escape')) {
-        function escape($string) {
-            return htmlspecialchars(trim($string), ENT_QUOTES, 'UTF-8');
-        }
-    }
-    
-    // Crear objeto SceneIQ básico
-    if (!isset($sceneiq)) {
-        $sceneiq = new stdClass();
-        $sceneiq->generateCSRFToken = function() {
-            if (!isset($_SESSION['csrf_token'])) {
-                $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-            }
-            return $_SESSION['csrf_token'];
-        };
+// Solo definir si NO existen (fallback)
+if (!function_exists('getCurrentUser')) {
+    function getCurrentUser() {
+        if (!isset($_SESSION['user_id'])) return null;
+        return [
+            'id' => $_SESSION['user_id'],
+            'username' => $_SESSION['username'] ?? 'Usuario',
+            'email' => $_SESSION['user_email'] ?? '',
+            'role' => $_SESSION['user_role'] ?? 'user',
+            'full_name' => $_SESSION['full_name'] ?? 'Usuario',
+            'theme' => $_SESSION['theme_preference'] ?? 'dark'
+        ];
     }
 }
 
-$user = getCurrentUser();
-$alert = getAlert();
+if (!function_exists('getAlert')) {
+    function getAlert() {
+        if (isset($_SESSION['alert'])) {
+            $alert = $_SESSION['alert'];
+            unset($_SESSION['alert']);
+            return $alert;
+        }
+        return null;
+    }
+}
 
-// Asegurar que $sceneiq existe
+if (!function_exists('escape')) {
+    function escape($string) {
+        return htmlspecialchars(trim($string), ENT_QUOTES, 'UTF-8');
+    }
+}
+
+// Crear objeto SceneIQ básico si no existe
 if (!isset($sceneiq)) {
     $sceneiq = new stdClass();
     $sceneiq->generateCSRFToken = function() {
@@ -88,8 +66,10 @@ if (!isset($sceneiq)) {
         return $_SESSION['csrf_token'];
     };
 }
-?>
-<!DOCTYPE html>
+
+$user = getCurrentUser();
+$alert = getAlert();
+?><!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -202,7 +182,6 @@ if (!isset($sceneiq)) {
             const toggle = document.querySelector('.theme-toggle');
             if (toggle) toggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
             
-            // Guardar preferencia
             localStorage.setItem('sceneiq_theme', newTheme);
         }
         
@@ -225,7 +204,6 @@ if (!isset($sceneiq)) {
             if (alert) alert.remove();
         }
         
-        // Cerrar dropdown al clickear fuera
         document.addEventListener('click', function(e) {
             const userMenu = document.querySelector('.user-menu');
             const dropdown = document.getElementById('userDropdown');
@@ -235,7 +213,6 @@ if (!isset($sceneiq)) {
             }
         });
         
-        // Responsive menu
         function setupResponsiveMenu() {
             const nav = document.getElementById('mainNavigation');
             const btn = document.querySelector('.mobile-menu-btn');
@@ -245,7 +222,6 @@ if (!isset($sceneiq)) {
             if (window.innerWidth <= 768) {
                 btn.style.display = 'block';
                 
-                // Crear estilos para menú móvil si no existen
                 if (!document.getElementById('mobile-nav-styles')) {
                     const style = document.createElement('style');
                     style.id = 'mobile-nav-styles';
@@ -293,11 +269,9 @@ if (!isset($sceneiq)) {
             }
         }
         
-        // Inicializar responsive al cargar
         document.addEventListener('DOMContentLoaded', setupResponsiveMenu);
         window.addEventListener('resize', setupResponsiveMenu);
         
-        // Cargar tema guardado
         document.addEventListener('DOMContentLoaded', function() {
             const savedTheme = localStorage.getItem('sceneiq_theme');
             if (savedTheme && savedTheme !== '<?php echo $user && isset($user['theme']) ? $user['theme'] : 'dark'; ?>') {

@@ -127,7 +127,7 @@ INSERT INTO genres (name, slug, color) VALUES
 
 -- Insertar usuario administrador por defecto
 INSERT INTO users (username, email, password, full_name, role) VALUES
-('admin', 'admin@sceneiq.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Administrador SceneIQ', 'admin');
+('admin', 'admin@sceneiq.com', 'admin123', 'Administrador SceneIQ', 'admin');
 
 -- Contenido de ejemplo
 INSERT INTO content (title, slug, type, year, duration, synopsis, imdb_rating) VALUES

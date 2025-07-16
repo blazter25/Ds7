@@ -92,4 +92,42 @@
         <tmdb_id>1399</tmdb_id>
         <trailer_url>https://www.youtube.com/embed/JWtnJjn6ng0</trailer_url>
     </show>
+
+    <show>
+        <id>11</id>
+        <title>The Mandalorian</title>
+        <year>2019</year>
+        <type>series</type>
+        <duration>3 temporadas</duration>
+        <synopsis>Un cazarrecompensas solitario viaja por los confines exteriores de la galaxia, lejos de la autoridad de la Nueva República.</synopsis>
+        <imdb_rating>8.7</imdb_rating>
+        <poster>https://image.tmdb.org/t/p/w500/sWgBv7LV2PRoQgkxwlibdGXKz1S.jpg</poster>
+        <backdrop>https://image.tmdb.org/t/p/w1280/o7qi2v4uWQ3bsp7gkKnHD8QKRVX.jpg</backdrop>
+        <genres>
+            <genre>sci-fi</genre>
+            <genre>accion</genre>
+            <genre>aventura</genre>
+        </genres>
+        <tmdb_id>82856</tmdb_id>
+        <trailer_url>https://www.youtube.com/embed/aOC8E8z_ifw</trailer_url>
+    </show>
+
+    <show>
+        <id>12</id>
+        <title>Chernobyl</title>
+        <year>2019</year>
+        <type>series</type>
+        <duration>1 temporada</duration>
+        <synopsis>La historia del desastre nuclear de 1986 en Chernobyl y los valientes hombres y mujeres que se sacrificaron para salvar a Europa de una catástrofe inimaginable.</synopsis>
+        <imdb_rating>9.4</imdb_rating>
+        <poster>https://image.tmdb.org/t/p/w500/hlLXt2KLjqNCjk8XBdMe8VYzpwF.jpg</poster>
+        <backdrop>https://image.tmdb.org/t/p/w1280/900tHlUYUkp7Ol04XFSoAaEIXcT.jpg</backdrop>
+        <genres>
+            <genre>drama</genre>
+            <genre>historia</genre>
+            <genre>thriller</genre>
+        </genres>
+        <tmdb_id>83216</tmdb_id>
+        <trailer_url>https://www.youtube.com/embed/s9APLXM9Ei8</trailer_url>
+    </show>
 </series>
